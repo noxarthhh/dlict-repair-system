@@ -1,0 +1,95 @@
+[2025-12-03 07:48:29] Login attempt for username='admin'
+[2025-12-03 07:48:29] User found: staff_id=1, password_hash=present(len=70), role=admin
+[2025-12-03 07:48:29] Password verified: FAILED for username='admin'
+[2025-12-03 07:48:34] Login attempt for username='admin'
+[2025-12-03 07:48:34] User found: staff_id=1, password_hash=present(len=70), role=admin
+[2025-12-03 07:48:34] Password verified: FAILED for username='admin'
+[2025-12-03 07:48:38] Login attempt for username='admin'
+[2025-12-03 07:48:38] User found: staff_id=1, password_hash=present(len=70), role=admin
+[2025-12-03 07:48:38] Password verified: FAILED for username='admin'
+[2025-12-03 07:48:41] Login attempt for username='admin'
+[2025-12-03 07:48:41] User found: staff_id=1, password_hash=present(len=70), role=admin
+[2025-12-03 07:48:41] Password verified: FAILED for username='admin'
+[2025-12-03 08:06:15] Login attempt for username='admin'
+[2025-12-03 08:06:15] User found: staff_id=1, password_hash=present(len=70), role=admin
+[2025-12-03 08:06:15] Password verified: FAILED for username='admin'
+[2025-12-03 09:02:57] Login attempt for username='admin' from IP=::1
+[2025-12-03 09:02:57] User found: staff_id=1, password_hash=present(len=60), role=admin
+[2025-12-03 09:02:57] Password verified: FAILED for username='admin'
+[2025-12-03 09:03:13] Login attempt for username='admin' from IP=::1
+[2025-12-03 09:03:13] User found: staff_id=1, password_hash=present(len=60), role=admin
+[2025-12-03 09:03:13] Password verified: SUCCESS for username='admin'
+
+[2025-12-03 09:19:33] Login attempt for username='admin' from IP=::1[2025-12-03 09:19:33] Password verified: SUCCESS for username='admin'
+
+[2025-12-03 09:24:55] Login attempt for username='admin' from IP=::1[2025-12-03 09:24:55] Password verified: SUCCESS for username='admin'
+
+[2025-12-03 09:44:46] Login attempt for username='admin' from IP=::1[2025-12-03 09:44:46] Password verified: FAILED for username='admin'
+
+[2025-12-03 09:44:53] Login attempt for username='admin' from IP=::1[2025-12-03 09:44:53] Password verified: SUCCESS for username='admin'
+
+[2025-12-08 03:27:17] Login attempt for username='admin' from IP=::1[2025-12-08 03:27:17] Password verified: FAILED for username='admin'
+
+[2025-12-08 03:28:05] Login attempt for username='admin' from IP=::1[2025-12-08 03:28:05] Password verified: FAILED for username='admin'
+
+[2025-12-08 03:28:12] Login attempt for username='admin' from IP=::1[2025-12-08 03:28:12] Password verified: SUCCESS for username='admin'
+
+[2025-12-08 03:44:45] Login attempt for username='admin' from IP=::1[2025-12-08 03:44:45] Password verified: SUCCESS for username='admin'
+
+[2025-12-08 03:59:15] Login attempt for username='user01' from IP=::1[2025-12-08 03:59:15] Password verified: SUCCESS for username='user01'
+
+[2025-12-08 04:01:22] Login attempt for username='admin' from IP=::1[2025-12-08 04:01:22] Password verified: SUCCESS for username='admin'
+
+[2025-12-08 04:08:12] Login attempt for username='admin' from IP=::1[2025-12-08 04:08:12] Password verified: SUCCESS for username='admin'
+
+[2025-12-08 04:08:41] Login attempt for username='user01' from IP=::1[2025-12-08 04:08:41] Password verified: FAILED for username='user01'
+
+[2025-12-08 04:08:47] Login attempt for username='user01' from IP=::1[2025-12-08 04:08:47] Password verified: SUCCESS for username='user01'
+
+[2025-12-08 04:09:19] Login attempt for username='admin' from IP=::1[2025-12-08 04:09:19] Password verified: SUCCESS for username='admin'
+
+[2025-12-08 04:10:43] Login attempt for username='admin' from IP=::1[2025-12-08 04:10:43] Password verified: FAILED for username='admin'
+
+[2025-12-08 04:10:48] Login attempt for username='admin' from IP=::1[2025-12-08 04:10:48] Password verified: SUCCESS for username='admin'
+
+[2025-12-08 04:17:27] Login attempt for username='admin' from IP=::1[2025-12-08 04:17:27] Password verified: SUCCESS for username='admin'
+
+[2025-12-08 04:20:06] Login attempt for username='admin' from IP=::1[2025-12-08 04:20:06] Password verified: SUCCESS for username='admin'
+
+[2025-12-08 04:20:24] Login attempt for username='tech01' from IP=::1[2025-12-08 04:20:24] Password verified: SUCCESS for username='tech01'
+
+[2025-12-08 04:21:00] Login attempt for username='user01' from IP=::1[2025-12-08 04:21:00] Password verified: SUCCESS for username='user01'
+
+[2025-12-08 04:21:35] Login attempt for username='admin' from IP=::1[2025-12-08 04:21:35] Password verified: SUCCESS for username='admin'
+
+[2025-12-08 04:27:04] Login attempt for username='user02' from IP=::1[2025-12-08 04:27:04] Password verified: SUCCESS for username='user02'
+
+[2025-12-08 04:27:39] Login attempt for username='admin' from IP=::1[2025-12-08 04:27:39] Password verified: SUCCESS for username='admin'
+
+[2025-12-08 04:29:56] Login attempt for username='admin' from IP=::1[2025-12-08 04:29:56] Password verified: SUCCESS for username='admin'
+
+[2025-12-08 04:37:18] Login attempt for username='panpitakppt@gmail.com' from IP=::1[2025-12-08 04:37:18] Password verified: FAILED for username='panpitakppt@gmail.com'
+[2025-12-08 04:38:40] Login FAILED: panpitakppt@gmail.com
+[2025-12-08 04:38:44] Login FAILED: panpitakppt@gmail.com
+[2025-12-08 04:38:52] Login FAILED: panpitakppt@gmail.com
+
+[2025-12-08 04:38:59] Login attempt for username='panpitakppt@gmail.com' from IP=::1[2025-12-08 04:38:59] Password verified: FAILED for username='panpitakppt@gmail.com'
+
+[2025-12-08 04:53:14] Login attempt for username='admin' from IP=::1[2025-12-08 04:53:14] Password verified: SUCCESS for username='admin'
+
+[2025-12-08 05:16:09] Login attempt for username='admin' from IP=::1[2025-12-08 05:16:09] Password verified: SUCCESS for username='admin'
+
+[2025-12-08 05:20:32] Login attempt for username='admin' from IP=::1[2025-12-08 05:20:32] Password verified: FAILED for username='admin'
+
+[2025-12-08 05:20:36] Login attempt for username='admin' from IP=::1[2025-12-08 05:20:36] Password verified: SUCCESS for username='admin'
+
+[2025-12-08 05:27:36] Login attempt for username='admin' from IP=::1[2025-12-08 05:27:36] Password verified: SUCCESS for username='admin'
+[2025-12-08 05:30:51] Login SUCCESS: admin
+[2025-12-08 05:33:30] Login SUCCESS: user01
+[2025-12-08 05:36:22] Login SUCCESS: admin
+[2025-12-08 05:36:59] Login SUCCESS: user03
+[2025-12-08 05:37:18] Login SUCCESS: admin
+[2025-12-08 11:48:28] Login SUCCESS: admin
+[2025-12-08 11:53:53] Login SUCCESS: admin
+[2025-12-08 11:56:08] Login SUCCESS: user01
+[2025-12-08 11:57:06] Login SUCCESS: admin

@@ -1,0 +1,157 @@
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+
+:root {
+    /* สีหลัก (Modern Blue Theme) */
+    --primary: #2563eb;       
+    --primary-hover: #1d4ed8;
+    --bg-body: #f1f5f9;       /* พื้นหลังสีเทาฟ้าอ่อน สบายตา */
+    --card-bg: #ffffff;
+    --text-main: #1e293b;     /* สีตัวหนังสือหลัก (ไม่ดำสนิท อ่านง่าย) */
+    --text-muted: #64748b;
+    --border: #e2e8f0;
+    
+    /* สีสถานะ */
+    --success: #10b981; --success-bg: #d1fae5;
+    --warning: #f59e0b; --warning-bg: #fef3c7;
+    --danger: #ef4444;  --danger-bg: #fee2e2;
+    --info: #0ea5e9;    --info-bg: #e0f2fe;
+
+    /* ระยะห่างและความโค้ง */
+    --radius: 16px;
+    --shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+}
+
+* { box-sizing: border-box; }
+
+body {
+    font-family: 'Sarabun', sans-serif;
+    background-color: var(--bg-body);
+    color: var(--text-main);
+    margin: 0;
+    font-size: 16px; 
+    line-height: 1.6;
+}
+
+/* --- Layout --- */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 30px 20px;
+}
+
+/* --- Header --- */
+.site-header {
+    background: var(--card-bg);
+    box-shadow: var(--shadow);
+    padding: 15px 0;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+.header-inner { display: flex; justify-content: space-between; align-items: center; }
+.brand { font-size: 1.5rem; font-weight: 800; color: var(--primary); text-decoration: none; }
+.main-nav { display: flex; gap: 15px; align-items: center; }
+.main-nav a { text-decoration: none; color: var(--text-main); font-weight: 600; padding: 8px 12px; border-radius: 8px; transition: 0.2s; }
+.main-nav a:hover { background-color: var(--info-bg); color: var(--primary); }
+.btn-logout { color: var(--danger) !important; border: 1px solid var(--danger); }
+.btn-logout:hover { background-color: var(--danger) !important; color: white !important; }
+
+/* --- Cards (กล่องเนื้อหา) --- */
+.card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 30px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    margin-bottom: 30px;
+}
+
+h1 { font-size: 2rem; color: var(--text-main); margin-bottom: 10px; }
+h2, h3 { color: var(--text-main); font-weight: 700; }
+
+/* --- Forms (ฟอร์มสวยๆ) --- */
+.form-card { max-width: 700px; margin: 0 auto; }
+.form-group { margin-bottom: 25px; }
+label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 1.1rem; }
+input, select, textarea {
+    width: 100%;
+    padding: 14px;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    font-size: 1rem;
+    font-family: inherit;
+    transition: 0.2s;
+    background-color: #f8fafc;
+}
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    background-color: #fff;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+}
+
+/* --- Buttons (ปุ่มกดง่าย ไม่ซ้อน) --- */
+.btn-primary, .btn-action, .btn-detail, .btn-success, button[type="submit"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 20px;
+    margin: 4px; /* กันชนไม่ให้ปุ่มติดกัน */
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+    transition: 0.2s;
+    white-space: nowrap; /* ห้ามตัดบรรทัด */
+    flex-shrink: 0;      /* ห้ามปุ่มหดตัว */
+}
+.btn-primary, button[type="submit"] { background-color: var(--primary); color: white; }
+.btn-primary:hover { background-color: var(--primary-hover); transform: translateY(-2px); }
+.btn-action { background-color: var(--info); color: white; }
+.btn-success { background-color: var(--success); color: white; }
+.btn-detail { background-color: #fff; color: var(--text-muted); border: 2px solid var(--border); }
+.btn-detail:hover { background-color: var(--bg-body); color: var(--text-main); }
+
+/* --- Tables (ตารางสวยงาม) --- */
+table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 20px; }
+th { text-align: left; padding: 18px; background: #f8fafc; color: var(--text-muted); font-weight: 600; border-bottom: 2px solid var(--border); }
+td { padding: 18px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+
+/* ✅ แก้ไขปุ่มซ้อนในตาราง */
+td[data-label="ดำเนินการ"] {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 240px; /* จองพื้นที่กว้างๆ */
+}
+
+/* --- Status Badges --- */
+.status-badge { padding: 6px 12px; border-radius: 50px; font-weight: 700; font-size: 0.9rem; display: inline-block; }
+.status-pending { background: var(--warning-bg); color: #b45309; }
+.status-in_progress { background: var(--info-bg); color: #0369a1; }
+.status-completed { background: var(--success-bg); color: #047857; }
+
+/* --- Alerts --- */
+.alert { padding: 15px; border-radius: 12px; margin-bottom: 20px; font-weight: 500; }
+.alert-success { background: var(--success-bg); color: #065f46; border: 1px solid var(--success); }
+.alert-danger { background: var(--danger-bg); color: #991b1b; border: 1px solid var(--danger); }
+
+/* --- Mobile Responsive --- */
+@media (max-width: 900px) {
+    .header-inner { flex-direction: column; gap: 15px; }
+    .main-nav { flex-wrap: wrap; justify-content: center; width: 100%; }
+    
+    /* แปลงตารางเป็น Card ในมือถือ */
+    table, thead, tbody, th, td, tr { display: block; }
+    thead tr { position: absolute; top: -9999px; left: -9999px; }
+    tr { margin-bottom: 20px; border: 2px solid var(--border); border-radius: 16px; padding: 15px; background: #fff; }
+    td { border: none; position: relative; padding-left: 0; text-align: right; border-bottom: 1px dashed var(--border); padding-bottom: 10px; margin-bottom: 10px; }
+    td:last-child { border-bottom: none; margin-bottom: 0; }
+    td:before { position: absolute; left: 0; font-weight: 700; color: var(--text-muted); content: attr(data-label); }
+    
+    /* จัดปุ่มในมือถือ */
+    td[data-label="ดำเนินการ"] { display: block; text-align: center; }
+    td[data-label="ดำเนินการ"] .btn-action, td[data-label="ดำเนินการ"] .btn-detail { width: 100%; justify-content: center; }
+}
