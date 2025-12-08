@@ -95,67 +95,76 @@ include 'includes/header.php';
     }
 </style>
 
-<div class="dashboard-wrapper">
-    <div style="text-align: center; margin-bottom: 10px;">
-        <h1>👤 เพิ่มผู้ใช้งานใหม่</h1>
-        <p class="small-muted">สร้างบัญชีผู้ใช้งานสำหรับเจ้าหน้าที่ หรือผู้แจ้งซ่อม</p>
-    </div>
+<div class="container">
+    <div class="center-wrapper">
+        
+        <div style="text-align: center; margin-bottom: 20px;">
+            <h1>👤 เพิ่มผู้ใช้งานใหม่</h1>
+            <p style="color: var(--text-muted); font-size: 1.1rem;">สร้างบัญชีเจ้าหน้าที่ หรือผู้ใช้งานในระบบ</p>
+        </div>
 
-    <?php if ($success_msg): ?>
-        <div class="alert alert-success"><?php echo $success_msg; ?></div>
-    <?php endif; ?>
-    <?php if ($error_msg): ?>
-        <div class="alert alert-danger"><?php echo $error_msg; ?></div>
-    <?php endif; ?>
+        <?php if ($success_msg): ?>
+            <div class="alert alert-success"><?php echo $success_msg; ?></div>
+        <?php endif; ?>
+        <?php if ($error_msg): ?>
+            <div class="alert alert-danger"><?php echo $error_msg; ?></div>
+        <?php endif; ?>
 
-    <div class="card form-card">
-        <form method="POST" action="admin_add_user.php">
-            
-            <div class="two-column-layout" style="margin-bottom: 0; gap: 20px;">
-                <div>
-                    <h3 style="color: var(--primary); border-bottom: 1px solid #eee; padding-bottom: 5px;">🔐 ข้อมูลเข้าระบบ</h3>
-                    <div class="form-group">
-                        <label>Username / Email <span style="color:red">*</span></label>
-                        <input type="text" name="username" required placeholder="เช่น user01" autocomplete="off">
+        <div class="card" style="max-width: 900px; margin: 0 auto; padding: 40px;">
+            <form method="POST" action="admin_add_user.php">
+                
+                <div class="two-column-layout" style="gap: 40px;">
+                    <div>
+                        <div class="section-title">🔐 ข้อมูลเข้าระบบ</div>
+                        
+                        <div class="form-group">
+                            <label>Username / Email <span style="color:red">*</span></label>
+                            <input type="text" name="username" required placeholder="เช่น user01" autocomplete="off">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>รหัสผ่าน <span style="color:red">*</span></label>
+                            <input type="text" name="password" required placeholder="ตั้งรหัสผ่านเริ่มต้น">
+                        </div>
+
+                        <div class="form-group">
+                            <label>สิทธิ์การใช้งาน (Role) <span style="color:red">*</span></label>
+                            <select name="role" required>
+                                <option value="requester">👤 Requester (ผู้แจ้ง)</option>
+                                <option value="technician">🛠️ Technician (ช่าง)</option>
+                                <option value="admin">👑 Admin (ผู้ดูแล)</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>รหัสผ่าน <span style="color:red">*</span></label>
-                        <input type="text" name="password" required placeholder="ตั้งรหัสผ่าน">
-                    </div>
-                    <div class="form-group">
-                        <label>สิทธิ์การใช้งาน (Role) <span style="color:red">*</span></label>
-                        <select name="role" required>
-                            <option value="requester">👤 Requester (ผู้แจ้ง)</option>
-                            <option value="technician">🛠️ Technician (ช่าง)</option>
-                            <option value="admin">👑 Admin (ผู้ดูแล)</option>
-                        </select>
+
+                    <div>
+                        <div class="section-title" style="color: var(--info);">📝 ข้อมูลส่วนตัว</div>
+                        
+                        <div class="form-group">
+                            <label>ชื่อ-นามสกุล <span style="color:red">*</span></label>
+                            <input type="text" name="full_name" required placeholder="เช่น นายสมชาย ใจดี">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>กลุ่ม/ฝ่าย</label>
+                            <input type="text" name="group_name" placeholder="เช่น บริหารงานบุคคล">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>ตำแหน่ง</label>
+                            <input type="text" name="position" placeholder="เช่น นักวิชาการ">
+                        </div>
                     </div>
                 </div>
 
-                <div>
-                    <h3 style="color: var(--info); border-bottom: 1px solid #eee; padding-bottom: 5px;">📝 ข้อมูลส่วนตัว</h3>
-                    <div class="form-group">
-                        <label>ชื่อ-นามสกุล <span style="color:red">*</span></label>
-                        <input type="text" name="full_name" required placeholder="เช่น นายสมชาย ใจดี">
-                    </div>
-                    <div class="form-group">
-                        <label>กลุ่ม/ฝ่าย</label>
-                        <input type="text" name="group_name" placeholder="เช่น บริหารงานบุคคล">
-                    </div>
-                    <div class="form-group">
-                        <label>ตำแหน่ง</label>
-                        <input type="text" name="position" placeholder="เช่น นักวิชาการ">
-                    </div>
+                <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px dashed var(--border);">
+                    <button type="submit" class="btn-primary" style="min-width: 200px; font-size: 1.1rem; padding: 12px 24px;">
+                        💾 บันทึกข้อมูล
+                    </button>
                 </div>
-            </div>
 
-            <div style="text-align: center; margin-top: 20px; padding-top: 10px; border-top: 1px dashed #eee;">
-                <button type="submit" class="btn-primary" style="width: 200px;">
-                    💾 บันทึกข้อมูล
-                </button>
-            </div>
-
-        </form>
+            </form>
+        </div>
     </div>
 </div>
 
