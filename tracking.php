@@ -17,19 +17,26 @@ $requests = $stmt->fetchAll();
 include 'includes/header.php'; 
 ?>
 
-<div class="container">
+<div class="page-header">
     <h1>📂 งานซ่อมของฉัน</h1>
-    <div class="card">
+    <a href="new_request.php" class="btn-primary">➕ แจ้งซ่อมเพิ่ม</a>
+</div>
+
+<div class="card" style="padding: 0;">
+    <div class="table-wrapper" style="border:none;">
         <?php if (empty($requests)): ?>
-            <p style="text-align:center; padding: 20px;">คุณยังไม่มีรายการแจ้งซ่อม <a href="new_request.php">แจ้งซ่อมใหม่คลิกที่นี่</a></p>
+            <div style="text-align:center; padding:40px;">
+                <p style="font-size:1.2rem; color:#999;">คุณยังไม่มีรายการแจ้งซ่อม</p>
+                <a href="new_request.php" class="btn-primary" style="margin-top:10px;">ไปแจ้งซ่อมกันเลย!</a>
+            </div>
         <?php else: ?>
             <table>
                 <thead>
                     <tr>
                         <th>เลขที่</th>
+                        <th>สถานะ</th>
                         <th>เครื่อง</th>
                         <th>อาการ</th>
-                        <th>สถานะ</th>
                         <th>ช่างผู้รับผิดชอบ</th>
                         <th>รายละเอียด</th>
                     </tr>
@@ -37,12 +44,19 @@ include 'includes/header.php';
                 <tbody>
                     <?php foreach ($requests as $r): ?>
                     <tr>
-                        <td data-label="เลขที่"><b><?php echo $r['request_no']; ?></b></td>
-                        <td data-label="เครื่อง"><?php echo htmlspecialchars($r['asset_number'] ?: ($r['manual_asset']?:'-')); ?></td>
-                        <td data-label="อาการ"><?php echo htmlspecialchars(mb_substr($r['issue_details'], 0, 30)); ?>...</td>
-                        <td data-label="สถานะ"><span class="status-badge status-<?php echo strtolower(str_replace(' ','_',$r['status'])); ?>"><?php echo $r['status']; ?></span></td>
-                        <td data-label="ช่าง"><?php echo htmlspecialchars($r['technician_name']?:'รอดำเนินการ'); ?></td>
-                        <td data-label="รายละเอียด"><a href="repair_details.php?id=<?php echo $r['request_id']; ?>" class="btn-detail">ดูรายละเอียด</a></td>
+                        <td><strong><?php echo $r['request_no']; ?></strong></td>
+                        <td>
+                            <span class="status-badge status-<?php echo strtolower(str_replace(' ','_',$r['status'])); ?>">
+                                <?php 
+                                    $status_map = ['Pending'=>'รอรับเรื่อง ⏳', 'In Progress'=>'กำลังซ่อม 🔧', 'Completed'=>'เสร็จสิ้น ✅'];
+                                    echo $status_map[$r['status']] ?? $r['status'];
+                                ?>
+                            </span>
+                        </td>
+                        <td><?php echo htmlspecialchars($r['asset_number'] ?: ($r['manual_asset']?:'-')); ?></td>
+                        <td><?php echo htmlspecialchars(mb_substr($r['issue_details'], 0, 40)); ?>...</td>
+                        <td><?php echo htmlspecialchars($r['technician_name']?:'รอดำเนินการ'); ?></td>
+                        <td><a href="repair_details.php?id=<?php echo $r['request_id']; ?>" class="btn-detail">ดูรายละเอียด</a></td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>

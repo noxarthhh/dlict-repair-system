@@ -2,7 +2,7 @@
 session_start();
 include 'db_connect.php';
 
-// 1. ⛔ Access Control: เฉพาะ Admin
+// 1. ⛔ Access Control
 if (!isset($_SESSION['logged_in']) || $_SESSION['user_role'] !== 'admin') {
     header("Location: dashboard_tech.php");
     exit();
@@ -21,23 +21,23 @@ try {
     $in_progress = $status_data['In Progress'] ?? 0;
     $completed = $status_data['Completed'] ?? 0;
 
-    // --- QUERY 2: Top Technicians ---
+    // --- QUERY 2: Top Technicians (3 อันดับแรกพอ เพื่อประหยัดที่) ---
     $sql_tech = "SELECT s.full_name, COUNT(r.request_id) as job_count 
                  FROM repair_requests r JOIN staffs s ON r.technician_id = s.staff_id
                  WHERE r.status IN ('In Progress', 'Completed')
-                 GROUP BY r.technician_id ORDER BY job_count DESC LIMIT 5";
+                 GROUP BY r.technician_id ORDER BY job_count DESC LIMIT 3";
     $stmt_tech = $pdo->query($sql_tech);
     $tech_stats = $stmt_tech->fetchAll(PDO::FETCH_ASSOC);
     
     $tech_names = array_column($tech_stats, 'full_name');
     $tech_counts = array_column($tech_stats, 'job_count');
 
-    // --- QUERY 3: 5 รายการล่าสุด (ย่อข้อมูล) ---
+    // --- QUERY 3: 7 รายการล่าสุด (เพิ่มจำนวนหน่อยเพราะพื้นที่เหลือ) ---
     $sql_recent = "SELECT r.request_no, r.status, s.full_name AS req_name, t.full_name AS tech_name
                    FROM repair_requests r
                    LEFT JOIN staffs s ON r.requester_id = s.staff_id
                    LEFT JOIN staffs t ON r.technician_id = t.staff_id
-                   ORDER BY r.request_date DESC LIMIT 6"; // เพิ่มเป็น 6 รายการให้เต็มพื้นที่
+                   ORDER BY r.request_date DESC LIMIT 7";
     $stmt_recent = $pdo->query($sql_recent);
     $recent_jobs = $stmt_recent->fetchAll(PDO::FETCH_ASSOC);
 
@@ -49,201 +49,209 @@ include 'includes/header.php';
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-    /* บังคับให้ Container เต็มความสูงและไม่เลื่อน */
-    .dashboard-wrapper {
+    /* ปรับแต่ง CSS เฉพาะหน้านี้เพื่อทำ Single Screen */
+    
+    /* ล็อกความสูงหน้าจอ */
+    body { overflow: hidden; } 
+    
+    /* Container หลัก จัดเป็น Grid */
+    .dashboard-container {
+        height: calc(100vh - 80px); /* ความสูงเต็มจอ - ความสูง Header */
+        display: grid;
+        grid-template-rows: auto 1fr; /* แถวบน: หัวข้อ/Stats, แถวล่าง: กราฟ/ตาราง */
+        gap: 15px;
+        padding: 10px 20px 20px 20px;
         max-width: 1400px;
         margin: 0 auto;
-        padding: 10px 20px;
-        height: calc(100vh - 90px); /* ลบความสูง Header */
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-        overflow: hidden; /* ห้าม Scroll */
     }
 
-    /* แถวที่ 1: การ์ดตัวเลข (Stat Cards) */
+    /* แถวบน: สรุปตัวเลข (Stats Row) */
     .stats-row {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
         gap: 15px;
-        height: 15%; /* ความสูง 15% ของหน้า */
     }
-    .compact-card {
+    .stat-box {
         background: #fff;
         border-radius: 12px;
-        padding: 15px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        padding: 15px 20px;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        border: 1px solid #e2e8f0;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
     }
-    .compact-card h3 { font-size: 0.9rem; color: #64748b; margin: 0; }
-    .compact-card .num { font-size: 2rem; font-weight: 800; line-height: 1; }
-    .compact-card .icon { font-size: 2rem; opacity: 0.8; }
+    .stat-title { font-size: 0.9rem; color: var(--text-muted); font-weight: 600; }
+    .stat-value { font-size: 2rem; font-weight: 800; line-height: 1.2; }
+    .stat-icon { font-size: 2.2rem; opacity: 0.2; }
 
-    /* แถวที่ 2: เนื้อหาหลัก (แบ่ง 3 คอลัมน์) */
-    .main-content-row {
+    /* แถวล่าง: เนื้อหาหลัก (Main Content) แบ่ง 3 คอลัมน์ */
+    .main-row {
         display: grid;
-        grid-template-columns: 1fr 1.5fr 1.2fr; /* กราฟกลม | กราฟแท่ง | ตาราง */
+        grid-template-columns: 1fr 1fr 1.2fr; /* กราฟกลม | กราฟแท่ง | ตาราง */
         gap: 15px;
-        height: 85%; /* ใช้พื้นที่ที่เหลือทั้งหมด */
+        min-height: 0; /* สำคัญ! ป้องกัน Flex item ล้น */
     }
+
+    /* กล่อง Panel มาตรฐาน */
     .panel {
         background: #fff;
         border-radius: 12px;
-        padding: 15px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        border: 1px solid #e2e8f0;
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow);
         display: flex;
         flex-direction: column;
+        overflow: hidden; /* ซ่อนส่วนเกิน */
     }
-    .panel-header {
-        font-size: 1rem;
+    .panel-head {
+        padding: 12px 15px;
+        background: #f8fafc;
+        border-bottom: 1px solid var(--border);
         font-weight: 700;
-        margin-bottom: 10px;
-        color: #1e293b;
-        border-bottom: 1px solid #f1f5f9;
-        padding-bottom: 5px;
+        color: var(--text-main);
+        display: flex; justify-content: space-between; align-items: center;
     }
-    
-    /* ปรับขนาดกราฟให้พอดี */
-    .chart-container {
-        flex-grow: 1;
+    .panel-body {
+        flex: 1;
+        padding: 10px;
         position: relative;
-        width: 100%;
-        height: 100%;
-        min-height: 0; /* สำคัญสำหรับ Flex item */
+        min-height: 0; /* เพื่อให้ Chart ย่อขยายได้ */
+        display: flex; justify-content: center; align-items: center;
     }
 
-    /* ตารางย่อ */
-    .mini-table {
+    /* ตารางขนาดเล็ก */
+    .mini-table-wrapper {
         width: 100%;
-        font-size: 0.85rem;
-        border-collapse: collapse;
+        height: 100%;
+        overflow-y: auto; /* ให้ Scroll ได้เฉพาะในตาราง */
     }
-    .mini-table th { text-align: left; color: #64748b; padding: 8px; border-bottom: 1px solid #e2e8f0; }
+    .mini-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .mini-table th { position: sticky; top: 0; background: #fff; z-index: 1; text-align: left; padding: 8px; border-bottom: 2px solid var(--border); color: var(--text-muted); }
     .mini-table td { padding: 8px; border-bottom: 1px solid #f1f5f9; }
-    .mini-badge { padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+    .mini-table tr:last-child td { border-bottom: none; }
     
-    /* Responsive: ถ้าจอเล็กมากๆ ให้เลื่อนได้ */
+    /* Responsive: ถ้าจอเล็กเกินไป ให้กลับมา Scroll ได้ */
     @media (max-width: 1024px) {
-        .dashboard-wrapper { height: auto; overflow: auto; }
-        .main-content-row { grid-template-columns: 1fr; height: auto; }
-        .chart-container { height: 300px; }
+        body { overflow: auto; }
+        .dashboard-container { height: auto; display: block; }
+        .stats-row, .main-row { grid-template-columns: 1fr; margin-bottom: 20px; }
+        .panel { height: 300px; margin-bottom: 15px; }
     }
 </style>
 
-<div class="dashboard-wrapper">
+<div class="dashboard-container">
+    
     <div class="stats-row">
-        <div class="compact-card" style="border-left: 4px solid #64748b;">
+        <div class="stat-box" style="border-left: 4px solid #64748b;">
             <div>
-                <h3>ทั้งหมด</h3>
-                <div class="num"><?php echo number_format($total_jobs); ?></div>
+                <div class="stat-title">ทั้งหมด</div>
+                <div class="stat-value"><?php echo number_format($total_jobs); ?></div>
             </div>
-            <div class="icon">📁</div>
+            <i class="fa-solid fa-folder-open stat-icon" style="color:#64748b;"></i>
         </div>
-        <div class="compact-card" style="border-left: 4px solid #f59e0b;">
+        <div class="stat-box" style="border-left: 4px solid #f59e0b;">
             <div>
-                <h3>รอคิว</h3>
-                <div class="num" style="color: #f59e0b;"><?php echo number_format($pending); ?></div>
+                <div class="stat-title">รอคิว</div>
+                <div class="stat-value" style="color: #f59e0b;"><?php echo number_format($pending); ?></div>
             </div>
-            <div class="icon">⏳</div>
+            <i class="fa-solid fa-clock stat-icon" style="color:#f59e0b;"></i>
         </div>
-        <div class="compact-card" style="border-left: 4px solid #3b82f6;">
+        <div class="stat-box" style="border-left: 4px solid #3b82f6;">
             <div>
-                <h3>กำลังซ่อม</h3>
-                <div class="num" style="color: #3b82f6;"><?php echo number_format($in_progress); ?></div>
+                <div class="stat-title">กำลังซ่อม</div>
+                <div class="stat-value" style="color: #3b82f6;"><?php echo number_format($in_progress); ?></div>
             </div>
-            <div class="icon">🔧</div>
+            <i class="fa-solid fa-wrench stat-icon" style="color:#3b82f6;"></i>
         </div>
-        <div class="compact-card" style="border-left: 4px solid #10b981;">
+        <div class="stat-box" style="border-left: 4px solid #10b981;">
             <div>
-                <h3>เสร็จสิ้น</h3>
-                <div class="num" style="color: #10b981;"><?php echo number_format($completed); ?></div>
+                <div class="stat-title">เสร็จสิ้น</div>
+                <div class="stat-value" style="color: #10b981;"><?php echo number_format($completed); ?></div>
             </div>
-            <div class="icon">✅</div>
+            <i class="fa-solid fa-circle-check stat-icon" style="color:#10b981;"></i>
         </div>
     </div>
 
-    <div class="main-content-row">
+    <div class="main-row">
         
         <div class="panel">
-            <div class="panel-header">📈 สัดส่วนงาน</div>
-            <div class="chart-container">
+            <div class="panel-head">📈 สัดส่วนงาน</div>
+            <div class="panel-body">
                 <canvas id="statusChart"></canvas>
             </div>
         </div>
 
         <div class="panel">
-            <div class="panel-header">🏆 ประสิทธิภาพช่าง (งาน)</div>
-            <div class="chart-container">
+            <div class="panel-head">🏆 ช่างยอดฝีมือ (Top 3)</div>
+            <div class="panel-body">
                 <canvas id="techChart"></canvas>
             </div>
         </div>
 
         <div class="panel">
-            <div class="panel-header">🕒 ความเคลื่อนไหวล่าสุด</div>
-            <div style="overflow-y: auto;">
-                <table class="mini-table">
-                    <thead>
-                        <tr>
-                            <th>เลขที่</th>
-                            <th>ผู้แจ้ง</th>
-                            <th>สถานะ</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($recent_jobs as $job): ?>
-                        <tr>
-                            <td><b><?php echo $job['request_no']; ?></b></td>
-                            <td><?php echo mb_substr($job['req_name'], 0, 15) . '..'; ?></td>
-                            <td>
-                                <?php 
-                                    $s = $job['status'];
-                                    $color = ($s=='Pending')?'#f59e0b':(($s=='In Progress')?'#3b82f6':'#10b981');
-                                ?>
-                                <span class="mini-badge" style="background:<?php echo $color; ?>20; color:<?php echo $color; ?>;">
-                                    <?php echo $s; ?>
-                                </span>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
+            <div class="panel-head">
+                <span>🕒 ความเคลื่อนไหวล่าสุด</span>
+                <a href="dashboard_tech.php" style="font-size:0.8rem; color:var(--primary);">ดูทั้งหมด</a>
             </div>
-            <div style="text-align: center; margin-top: auto; padding-top: 10px;">
-                <a href="dashboard_tech.php" style="font-size: 0.85rem; color: #3b82f6; text-decoration: none;">ดูทั้งหมด &rarr;</a>
+            <div class="panel-body" style="padding: 0; display: block;">
+                <div class="mini-table-wrapper">
+                    <table class="mini-table">
+                        <thead>
+                            <tr>
+                                <th>เลขที่</th>
+                                <th>ผู้แจ้ง</th>
+                                <th>สถานะ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($recent_jobs as $job): ?>
+                            <tr>
+                                <td><b><?php echo $job['request_no']; ?></b></td>
+                                <td title="<?php echo htmlspecialchars($job['req_name']); ?>">
+                                    <?php echo mb_substr($job['req_name'], 0, 12) . '..'; ?>
+                                </td>
+                                <td>
+                                    <?php 
+                                        $s = $job['status'];
+                                        $color = match($s) { 'Pending'=>'#f59e0b', 'In Progress'=>'#3b82f6', 'Completed'=>'#10b981', default=>'#666' };
+                                    ?>
+                                    <span style="color:<?php echo $color; ?>; font-weight:700; font-size:0.75rem; background:<?php echo $color; ?>15; padding:2px 6px; border-radius:4px;">
+                                        <?php echo $s; ?>
+                                    </span>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
+
     </div>
 </div>
 
 <script>
-    // Config กราฟให้ดูเรียบง่าย ประหยัดพื้นที่
-    const commonOptions = {
+    const commonOpts = {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: {
-            legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } }
-        }
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } }
     };
 
-    // 1. กราฟวงกลม
+    // 1. Donut Chart
     new Chart(document.getElementById('statusChart'), {
         type: 'doughnut',
         data: {
-            labels: ['รอคิว', 'กำลังซ่อม', 'เสร็จ', 'ยกเลิก'],
+            labels: ['รอคิว', 'กำลังซ่อม', 'เสร็จ'],
             datasets: [{
-                data: [<?php echo "$pending, $in_progress, $completed, " . ($status_data['Canceled']??0); ?>],
-                backgroundColor: ['#f59e0b', '#3b82f6', '#10b981', '#ef4444'],
+                data: [<?php echo "$pending, $in_progress, $completed"; ?>],
+                backgroundColor: ['#f59e0b', '#3b82f6', '#10b981'],
                 borderWidth: 0
             }]
         },
-        options: commonOptions
+        options: commonOpts
     });
 
-    // 2. กราฟแท่ง
+    // 2. Bar Chart
     new Chart(document.getElementById('techChart'), {
         type: 'bar',
         data: {
@@ -252,19 +260,21 @@ include 'includes/header.php';
                 label: 'งานที่รับ',
                 data: <?php echo json_encode($tech_counts); ?>,
                 backgroundColor: '#3b82f6',
-                borderRadius: 4
+                borderRadius: 4,
+                barThickness: 30
             }]
         },
         options: {
-            ...commonOptions,
-            scales: {
-                y: { beginAtZero: true, ticks: { stepSize: 1 } },
-                x: { ticks: { font: { size: 10 } } }
-            },
-            plugins: { legend: { display: false } } // ซ่อน Legend เพื่อประหยัดที่
+            ...commonOpts,
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } }, x: { ticks: { font: { size: 10 } } } },
+            plugins: { legend: { display: false } }
         }
     });
 </script>
 
+<?php 
+// ไม่ต้องใส่ Footer ในหน้านี้เพื่อประหยัดพื้นที่แนวตั้ง
+// include 'includes/footer.php'; 
+?>
 </body>
 </html>
