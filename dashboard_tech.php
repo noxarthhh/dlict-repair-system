@@ -31,29 +31,21 @@ include 'includes/header.php';
 ?>
 
 <style>
-    /* 🛠️ CSS เฉพาะหน้านี้: บังคับหน้าเดียวจบ (No Window Scroll) */
-    
-    /* ล็อกความสูงหน้าจอ */
+    /* CSS เฉพาะหน้า Dashboard (เหมือนเดิม) */
     body { overflow: hidden; } 
-
-    /* คอนเทนเนอร์หลัก ยืดเต็มความสูงที่เหลือ */
     .dashboard-wrapper {
-        height: calc(100vh - 80px); /* ความสูงจอ - Header */
+        height: calc(100vh - 80px);
         display: flex;
         flex-direction: column;
         padding: 15px 25px;
         max-width: 100%;
         margin: 0 auto;
     }
-
-    /* ส่วนหัวข้อ (ไม่เลื่อน) */
     .dashboard-header {
         flex-shrink: 0;
         margin-bottom: 15px;
         display: flex; justify-content: space-between; align-items: center;
     }
-
-    /* การ์ดตาราง (ยืดเต็มพื้นที่ที่เหลือ) */
     .table-card {
         background: #fff;
         border-radius: 12px;
@@ -61,48 +53,30 @@ include 'includes/header.php';
         box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
         display: flex;
         flex-direction: column;
-        flex-grow: 1; /* สั่งให้ยืดกินพื้นที่ที่เหลือทั้งหมด */
-        overflow: hidden; /* ห้าม Scroll ที่ตัวการ์ด */
+        flex-grow: 1;
+        overflow: hidden;
     }
-
-    /* พื้นที่ Scroll ของตาราง (Scrollable Area) */
     .table-scroll {
         flex-grow: 1;
-        overflow-y: auto; /* ให้ Scroll ได้เฉพาะตรงนี้ */
+        overflow-y: auto;
         overflow-x: auto;
     }
-
-    /* ตาราง */
     table { width: 100%; border-collapse: collapse; }
-    
-    /* ล็อกหัวตาราง (Sticky Header) */
     th {
-        position: sticky; 
-        top: 0; 
-        z-index: 10;
-        background: #f8fafc; /* ต้องใส่สีพื้นหลังไม่งั้นตัวหนังสือจะซ้อน */
-        padding: 15px;
-        text-align: left;
-        font-weight: 600;
-        color: #64748b;
-        border-bottom: 2px solid #e2e8f0;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        position: sticky; top: 0; z-index: 10;
+        background: #f8fafc; padding: 15px; text-align: left; font-weight: 600; color: #64748b;
+        border-bottom: 2px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.02);
     }
-    
     td { padding: 15px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
     tr:hover { background-color: #f8fafc; }
-
-    /* ปุ่มจัดการ */
-    td[data-label="ดำเนินการ"] {
-        display: flex; gap: 8px; white-space: nowrap;
-    }
-    
-    /* Responsive: ถ้าจอเล็กเกินไป ให้กลับมา Scroll ได้ */
+    td[data-label="ดำเนินการ"] { display: flex; gap: 8px; white-space: nowrap; }
     @media (max-width: 1024px) {
         body { overflow: auto; }
         .dashboard-wrapper { height: auto; display: block; }
-        .table-card { height: 500px; } /* กำหนดความสูงขั้นต่ำในมือถือ */
+        .table-card { height: 500px; }
     }
+    /* Font สำหรับ Popup */
+    .swal-custom-font { font-family: 'Sarabun', sans-serif !important; }
 </style>
 
 <div class="dashboard-wrapper">
@@ -118,9 +92,16 @@ include 'includes/header.php';
     </div>
     
     <?php if (isset($_GET['update']) && $_GET['update'] == 'success'): ?>
-        <div class="alert alert-success" style="flex-shrink:0;">
-            ✅ อัปเดตสถานะงานซ่อม <strong>#<?php echo htmlspecialchars($_GET['id']); ?></strong> สำเร็จ!
-        </div>
+        <script>
+            Swal.fire({
+                icon: 'success',
+                title: 'บันทึกสำเร็จ!',
+                text: 'คุณได้รับงานซ่อม #<?php echo htmlspecialchars($_GET['id']); ?> แล้ว',
+                timer: 2000,
+                showConfirmButton: false,
+                customClass: { popup: 'swal-custom-font' }
+            });
+        </script>
     <?php endif; ?>
 
     <div class="table-card">
@@ -164,9 +145,11 @@ include 'includes/header.php';
                         
                         <td data-label="ดำเนินการ">
                             <?php if ($request['status'] == 'Pending'): ?>
-                                <a href="update_status.php?action=accept&id=<?php echo $request['request_id']; ?>" 
+                                <a href="#" 
                                    class="btn-action"
-                                   onclick="return confirm('ยืนยันรับงานนี้?');">รับเรื่อง</a>
+                                   onclick="confirmAccept(event, '<?php echo $request['request_id']; ?>', '<?php echo $request['request_no']; ?>');">
+                                   รับเรื่อง
+                                </a>
                             <?php endif; ?>
                             <a href="repair_details.php?id=<?php echo $request['request_id']; ?>" class="btn-detail">รายละเอียด</a>
                         </td>
@@ -183,6 +166,32 @@ include 'includes/header.php';
         </div>
     </div>
 </div>
+
+<script>
+function confirmAccept(e, id, no) {
+    e.preventDefault(); // หยุดการลิ้งค์ไว้ก่อน
+    
+    Swal.fire({
+        title: 'ยืนยันการรับงาน?',
+        text: "คุณต้องการรับผิดชอบงานซ่อมหมายเลข " + no + " ใช่หรือไม่?",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3b82f6', // สีฟ้า
+        cancelButtonColor: '#6b7280', // สีเทา
+        confirmButtonText: 'ใช่, รับงานเลย',
+        cancelButtonText: 'ยกเลิก',
+        customClass: {
+            popup: 'swal-custom-font',
+            title: 'swal-custom-title'
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // ถ้ากดตกลง ให้ส่งค่าไปที่ไฟล์ update_status.php
+            window.location.href = 'update_status.php?action=accept&id=' + id;
+        }
+    });
+}
+</script>
 
 <?php 
 // ไม่ต้องใส่ Footer ในหน้านี้เพื่อประหยัดพื้นที่แนวตั้ง
