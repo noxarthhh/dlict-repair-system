@@ -18,158 +18,226 @@ include 'includes/header.php';
 
 <style>
     /* บังคับหน้าเดียวจบ */
-    body { overflow: hidden; }
+    body { overflow: hidden; background-color: #f8fafc; }
 
-    /* Wrapper จัดกลาง */
-    .center-wrapper {
-        height: calc(100vh - 80px);
+    /* Wrapper หลัก: ยืดเต็มความสูงที่เหลือ */
+    .request-wrapper {
+        height: calc(100vh - 80px); /* ความสูงจอ - Header */
         display: flex;
-        flex-direction: column;
         justify-content: center;
         align-items: center;
-        padding: 10px 20px;
+        padding: 20px;
+        animation: fadeInUp 0.6s ease-out;
     }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* การ์ดฟอร์มแนวนอน (Wide Card) */
-    .form-card-wide {
+    /* การ์ดฟอร์ม (Flex Column) */
+    .form-card-premium {
         width: 100%;
-        max-width: 1100px;
-        background: var(--card-bg);
-        padding: 30px;
-        border-radius: 16px;
-        box-shadow: var(--shadow);
-        border: 1px solid var(--border);
-        display: flex;
+        max-width: 1200px;
+        height: 100%; /* ยืดเต็มพื้นที่ Wrapper */
+        background: #fff;
+        border-radius: 20px;
+        box-shadow: 0 15px 40px -10px rgba(0,0,0,0.1);
+        border: 1px solid rgba(255,255,255,0.8);
+        display: flex; /* จัด Layout แนวตั้ง */
         flex-direction: column;
-        
-        /* ให้ Scroll ภายในถ้าจอเล็กมาก */
-        max-height: 100%;
-        overflow-y: auto;
+        overflow: hidden; /* ห้ามล้น */
     }
 
-    /* ส่วนหัวฟอร์ม */
+    /* ส่วนหัวการ์ด (Fixed) */
     .form-header {
-        text-align: center;
-        margin-bottom: 20px;
-        padding-bottom: 10px;
-        border-bottom: 2px solid var(--border);
-        flex-shrink: 0;
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        padding: 20px 30px;
+        color: white;
+        display: flex; justify-content: space-between; align-items: center;
+        flex-shrink: 0; /* ห้ามหด */
     }
-    .form-header h1 { margin: 0; font-size: 1.8rem; color: var(--primary); }
-    .form-header p { margin: 5px 0 0; color: var(--text-muted); font-size: 1rem; }
+    .form-header h1 { margin: 0; font-size: 1.5rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+    .form-header p { margin: 0; opacity: 0.9; font-size: 0.9rem; font-weight: 300; }
 
-    /* Grid Layout: แบ่งซ้ายขวา */
-    .form-grid {
+    /* ส่วนเนื้อหาฟอร์ม (Scrollable Area) */
+    .form-body {
+        padding: 30px;
+        flex-grow: 1;    /* ยืดกินพื้นที่ที่เหลือ */
+        overflow-y: auto; /* ให้ Scroll ได้เฉพาะส่วนนี้ */
         display: grid;
-        grid-template-columns: 1fr 1fr; /* แบ่งครึ่ง */
-        gap: 30px;
-        flex-grow: 1; /* ยืดเต็มพื้นที่ */
+        grid-template-columns: 1fr 1.5fr; /* ขวากว้างกว่า */
+        gap: 40px;
     }
 
-    /* Column Styles */
-    .col-left, .col-right {
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-    }
-
-    /* Input Group */
-    .form-group label { font-size: 0.95rem; margin-bottom: 5px; color: var(--text-main); font-weight: 600; }
+    /* Input Styling */
+    .form-group { margin-bottom: 20px; }
+    .form-label { display: block; font-size: 0.9rem; font-weight: 600; color: #475569; margin-bottom: 5px; }
     
-    /* กล่องข้อมูลผู้ใช้ (Readonly) */
-    .user-info-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
+    .input-box { position: relative; display: flex; align-items: center; }
+    .input-box i { position: absolute; left: 15px; color: #94a3b8; font-size: 1rem; transition: 0.3s; }
+    
+    .form-control {
+        width: 100%;
+        padding: 12px 12px 12px 40px; /* เว้นที่ให้ไอคอน */
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        font-size: 0.95rem;
+        transition: all 0.3s;
+        background: #f8fafc;
+        color: #1e293b;
     }
-    .readonly-input {
-        background-color: var(--bg-body);
-        color: var(--text-muted);
-        cursor: not-allowed;
-        border: 1px solid var(--border);
-        font-size: 0.9rem;
+    .form-control:focus {
+        border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); outline: none;
     }
+    .form-control:focus + i { color: #3b82f6; }
 
-    /* กล่องอัปโหลด */
-    .upload-box {
-        border: 2px dashed var(--border);
-        background: var(--input-bg);
-        border-radius: 12px;
-        padding: 15px;
-        text-align: center;
-        transition: 0.2s;
-    }
-    .upload-box:hover { border-color: var(--primary); }
+    /* Readonly Inputs */
+    .form-control-static { background: #f1f5f9; border-color: transparent; color: #64748b; font-weight: 600; cursor: default; }
 
-    /* Responsive */
+    /* Upload Zone (Compact) */
+    .upload-zone {
+        border: 2px dashed #cbd5e1; border-radius: 12px; padding: 20px;
+        text-align: center; transition: 0.3s; background: #f8fafc; cursor: pointer; position: relative;
+    }
+    .upload-zone:hover { border-color: #3b82f6; background: #eff6ff; }
+    .upload-zone input[type="file"] { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+    .upload-icon { font-size: 2rem; color: #94a3b8; margin-bottom: 5px; transition: 0.3s; }
+    .upload-zone:hover .upload-icon { color: #3b82f6; transform: translateY(-3px); }
+
+    /* Footer (Fixed at bottom) */
+    .form-footer {
+        padding: 15px 30px;
+        border-top: 1px solid #f1f5f9;
+        text-align: right;
+        background: #fff;
+        flex-shrink: 0; /* ห้ามหด */
+    }
+    
+    .btn-submit {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white; border: none; padding: 12px 35px; border-radius: 50px;
+        font-size: 1rem; font-weight: 700; cursor: pointer;
+        box-shadow: 0 5px 15px rgba(37, 99, 235, 0.3); transition: 0.3s;
+        display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(37, 99, 235, 0.4); }
+
     @media (max-width: 900px) {
         body { overflow: auto; }
-        .center-wrapper { height: auto; display: block; padding-top: 30px; }
-        .form-grid { grid-template-columns: 1fr; gap: 20px; }
+        .request-wrapper { height: auto; display: block; padding-top: 20px; }
+        .form-card-premium { height: auto; overflow: visible; }
+        .form-body { grid-template-columns: 1fr; gap: 20px; padding: 25px; overflow: visible; }
     }
 </style>
 
-<div class="center-wrapper">
-    
-    <div class="form-card-wide">
+<div class="request-wrapper">
+    <form method="POST" action="submit_request.php" enctype="multipart/form-data" class="form-card-premium">
         
         <div class="form-header">
-            <h1>🔔 แจ้งซ่อมใหม่</h1>
-            <p>กรอกรายละเอียดปัญหาเพื่อแจ้งเจ้าหน้าที่</p>
+            <div>
+                <h1><i class="fa-solid fa-bell"></i> แจ้งซ่อมใหม่</h1>
+                <p>กรอกรายละเอียดปัญหาเพื่อแจ้งเจ้าหน้าที่</p>
+            </div>
+            <div style="font-size:2.5rem; opacity:0.2;"><i class="fa-solid fa-file-pen"></i></div>
         </div>
 
-        <?php if (isset($_GET['status']) && $_GET['status'] == 'success'): ?>
-            <div class="alert alert-success" style="text-align:center;">✅ บันทึกข้อมูลเรียบร้อย เลขที่: <b><?php echo htmlspecialchars($_GET['no']); ?></b></div>
-        <?php endif; ?>
-        <?php if (isset($_GET['status']) && $_GET['status'] == 'error'): ?>
-            <div class="alert alert-danger" style="text-align:center;">❌ เกิดข้อผิดพลาด: <?php echo htmlspecialchars($_GET['msg']); ?></div>
-        <?php endif; ?>
+        <div class="form-body">
+            
+            <div class="col-left">
+                <div class="form-group">
+                    <label class="form-label">ผู้แจ้ง</label>
+                    <div class="input-box"><i class="fa-solid fa-user"></i><input type="text" class="form-control form-control-static" value="<?php echo htmlspecialchars($full_name); ?>" readonly></div>
+                </div>
 
-        <form method="POST" action="submit_request.php" enctype="multipart/form-data" style="display: flex; flex-direction: column; flex-grow: 1;">
-            <div class="form-grid">
-                
-                <div class="col-left">
-                    
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
                     <div class="form-group">
-                        <label>👤 ข้อมูลผู้แจ้ง</label>
-                        <input type="text" class="readonly-input" value="<?php echo htmlspecialchars($full_name); ?>" disabled style="margin-bottom: 10px;">
-                        <div class="user-info-grid">
-                            <input type="text" class="readonly-input" value="<?php echo htmlspecialchars($user_info['position'] ?? '-'); ?>" disabled>
-                            <input type="text" class="readonly-input" value="<?php echo htmlspecialchars($user_info['group_name'] ?? '-'); ?>" disabled>
-                        </div>
+                        <label class="form-label">ตำแหน่ง</label>
+                        <div class="input-box"><i class="fa-solid fa-id-badge"></i><input type="text" class="form-control form-control-static" value="<?php echo htmlspecialchars($user_info['position'] ?? '-'); ?>" readonly></div>
                     </div>
-
                     <div class="form-group">
-                        <label>💻 หมายเลขทะเบียนครุภัณฑ์</label>
-                        <input type="text" name="asset_number" placeholder="เช่น PC-001 (เว้นว่างได้)">
-                    </div>
-
-                    <div class="form-group">
-                        <label>📸 รูปภาพประกอบ</label>
-                        <div class="upload-box">
-                            <input type="file" name="repair_image" accept="image/*" style="width:auto; font-size:0.9rem;">
-                            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 5px;">รองรับไฟล์ภาพ JPG, PNG</div>
-                        </div>
+                        <label class="form-label">ฝ่าย/กลุ่ม</label>
+                        <div class="input-box"><i class="fa-solid fa-building"></i><input type="text" class="form-control form-control-static" value="<?php echo htmlspecialchars($user_info['group_name'] ?? '-'); ?>" readonly></div>
                     </div>
                 </div>
 
-                <div class="col-right">
-                    <div class="form-group" style="height: 100%; display: flex; flex-direction: column;">
-                        <label>⚠️ รายละเอียดปัญหา <span style="color:red">*</span></label>
-                        <textarea name="issue_details" required placeholder="อธิบายอาการเสียที่พบอย่างละเอียด..." 
-                                  style="flex-grow: 1; min-height: 200px; resize: none;"></textarea>
+                <div class="form-group">
+                    <label class="form-label">ชนิดอุปกรณ์</label>
+                    <div class="input-box">
+                        <i class="fa-solid fa-laptop"></i>
+                        <select name="problem_type" class="form-control" required style="cursor:pointer;">
+                            <option value="">-- กรุณาเลือก --</option>
+                            <option value="เครื่องคอมพิวเตอร์">คอมพิวเตอร์ (PC)</option>
+                            <option value="โน้ตบุ๊ก">โน้ตบุ๊ก (Notebook)</option>
+                            <option value="เครื่องพิมพ์">เครื่องพิมพ์ (Printer)</option>
+                            <option value="อินเทอร์เน็ต">อินเทอร์เน็ต/Network</option>
+                            <option value="โปรแกรม">โปรแกรม/Software</option>
+                            <option value="อื่นๆ">อื่นๆ</option>
+                        </select>
                     </div>
                 </div>
 
+                <div class="form-group">
+                    <label class="form-label">เลขทะเบียน (ถ้ามี)</label>
+                    <div class="input-box"><i class="fa-solid fa-barcode"></i><input type="text" name="asset_number" class="form-control" placeholder="เช่น PC-001"></div>
+                </div>
             </div>
 
-            <div style="margin-top: 20px; text-align: center; padding-top: 15px; border-top: 1px dashed var(--border);">
-                <button type="submit" class="btn-primary" style="padding: 12px 60px; font-size: 1.1rem; border-radius: 50px;">
-                    🚀 ส่งเรื่องแจ้งซ่อม
-                </button>
+            <div class="col-right" style="display:flex; flex-direction:column;">
+                <div class="form-group" style="flex-grow:1; display:flex; flex-direction:column;">
+                    <label class="form-label">อาการ/รายละเอียด <span style="color:var(--danger)">*</span></label>
+                    <div class="input-box" style="flex-grow:1;">
+                        <i class="fa-solid fa-triangle-exclamation" style="top:12px;"></i>
+                        <textarea name="issue_details" class="form-control" required placeholder="อธิบายอาการเสียที่พบ..." style="height:100%; resize:none;"></textarea>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top:15px;">
+                    <label class="form-label">รูปภาพประกอบ</label>
+                    <div class="upload-zone">
+                        <input type="file" name="repair_image" accept="image/*" onchange="previewImage(this)">
+                        <div class="upload-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                        <div style="font-weight:600; color:#475569; font-size:0.9rem;">คลิกเพื่อเลือกไฟล์ หรือลากวาง</div>
+                        <div id="file-name" style="margin-top:5px; color:var(--primary); font-weight:600; font-size:0.85rem;"></div>
+                    </div>
+                </div>
             </div>
-        </form>
-    </div>
+
+        </div>
+
+        <div class="form-footer">
+            <button type="button" onclick="confirmSend(event)" class="btn-submit">
+                <i class="fa-solid fa-paper-plane"></i> ส่งเรื่องแจ้งซ่อม
+            </button>
+        </div>
+
+    </form>
 </div>
 
-<?php include 'includes/footer.php'; ?>
+<script>
+function previewImage(input) {
+    if (input.files && input.files[0]) {
+        document.getElementById('file-name').innerText = '📸 ' + input.files[0].name;
+    }
+}
+
+function confirmSend(e) {
+    e.preventDefault();
+    const form = document.querySelector('form');
+    if (!form.checkValidity()) { form.reportValidity(); return; }
+
+    Swal.fire({
+        title: 'ยืนยันการแจ้งซ่อม?', text: "ตรวจสอบความถูกต้องของข้อมูล", icon: 'question',
+        showCancelButton: true, confirmButtonColor: '#2563eb', cancelButtonColor: '#64748b',
+        confirmButtonText: 'ยืนยัน', cancelButtonText: 'ยกเลิก',
+        customClass: { popup: 'swal-custom-font' }
+    }).then((result) => { if (result.isConfirmed) { form.submit(); } });
+}
+
+<?php if (isset($_GET['status']) && $_GET['status'] == 'success'): ?>
+    Swal.fire({ icon: 'success', title: 'สำเร็จ!', text: 'เลขที่ใบงาน: <?php echo htmlspecialchars($_GET['no']); ?>', confirmButtonColor: '#10b981', customClass: { popup: 'swal-custom-font' } });
+<?php elseif (isset($_GET['status']) && $_GET['status'] == 'error'): ?>
+    Swal.fire({ icon: 'error', title: 'ผิดพลาด!', text: '<?php echo htmlspecialchars($_GET['msg']); ?>', confirmButtonColor: '#ef4444', customClass: { popup: 'swal-custom-font' } });
+<?php endif; ?>
+</script>
+
+<?php 
+// ปิด footer เพื่อประหยัดพื้นที่
+// include 'includes/footer.php'; 
+?>

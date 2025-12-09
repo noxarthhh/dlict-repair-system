@@ -8,25 +8,23 @@ if (!isset($_SESSION['logged_in']) || $_SERVER["REQUEST_METHOD"] != "POST") {
 }
 
 $requester_id = $_SESSION['staff_id'];
-$asset_number = trim($_POST['asset_number'] ?? ''); // สิ่งที่ user พิมพ์มา
+$asset_number = trim($_POST['asset_number'] ?? '');
 $issue_details = trim($_POST['issue_details'] ?? '');
+$problem_type = trim($_POST['problem_type'] ?? ''); // 🌟 รับค่าชนิดอุปกรณ์
+
 $asset_id = null;
 
-// 1. ลองค้นหา Asset ID ในฐานข้อมูล (ถ้าเจอ)
+// 1. ค้นหา Asset ID
 if (!empty($asset_number)) {
     try {
         $stmt = $pdo->prepare("SELECT asset_id FROM assets WHERE asset_number = ? LIMIT 1");
         $stmt->execute([$asset_number]);
         $found = $stmt->fetchColumn();
-        if ($found) {
-            $asset_id = $found;
-        }
-    } catch (PDOException $e) {
-        $asset_id = null;
-    }
+        if ($found) { $asset_id = $found; }
+    } catch (PDOException $e) { $asset_id = null; }
 }
 
-// 2. จัดการรูปภาพ (เหมือนเดิม)
+// 2. จัดการรูปภาพ
 $image_path = null;
 if (isset($_FILES['repair_image']) && $_FILES['repair_image']['error'] === UPLOAD_ERR_OK) {
     $ext = strtolower(pathinfo($_FILES['repair_image']['name'], PATHINFO_EXTENSION));
@@ -40,32 +38,23 @@ if (isset($_FILES['repair_image']) && $_FILES['repair_image']['error'] === UPLOA
 }
 
 try {
-    // 3. สร้างเลขรันนิ่ง FIX-YYMM-XXX
+    // 3. สร้างเลขที่
     $prefix = "FIX-" . date("ym") . "-";
     $stmt = $pdo->prepare("SELECT request_no FROM repair_requests WHERE request_no LIKE ? ORDER BY request_no DESC LIMIT 1");
     $stmt->execute([$prefix . '%']);
     $last_req = $stmt->fetchColumn();
-    
-    $number = 1;
-    if ($last_req) {
-        $number = (int)substr($last_req, -3) + 1;
-    }
+    $number = $last_req ? (int)substr($last_req, -3) + 1 : 1;
     $request_no = $prefix . str_pad($number, 3, '0', STR_PAD_LEFT);
 
-    // 4. บันทึกข้อมูล (เพิ่ม manual_asset)
-    // เราจะบันทึก $asset_number ที่ user พิมพ์ลงไปในช่อง manual_asset ด้วย
+    // 4. บันทึกข้อมูล (เพิ่ม problem_types)
     $sql = "INSERT INTO repair_requests 
-            (request_no, requester_id, asset_id, manual_asset, issue_details, image_path, status, request_date) 
-            VALUES (?, ?, ?, ?, ?, ?, 'Pending', NOW())";
+            (request_no, requester_id, asset_id, manual_asset, issue_details, image_path, status, request_date, problem_types) 
+            VALUES (?, ?, ?, ?, ?, ?, 'Pending', NOW(), ?)";
             
     $stmt = $pdo->prepare($sql);
     $stmt->execute([
-        $request_no, 
-        $requester_id, 
-        $asset_id, 
-        $asset_number, /* บันทึกข้อความที่ user พิมพ์กันเหนียวไว้ตรงนี้ */
-        htmlspecialchars($issue_details), 
-        $image_path
+        $request_no, $requester_id, $asset_id, $asset_number, 
+        htmlspecialchars($issue_details), $image_path, $problem_type // 🌟 บันทึกชนิดตรงนี้
     ]);
 
     header("Location: new_request.php?status=success&no=" . $request_no);

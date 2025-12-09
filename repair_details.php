@@ -9,11 +9,11 @@ $user_role = $_SESSION['user_role'];
 $is_tech_or_admin = ($user_role == 'technician' || $user_role == 'admin');
 $request_id = $_GET['id'] ?? null;
 
-if (!$request_id) { header("Location: " . ($is_tech_or_admin ? 'dashboard_tech.php' : 'tracking.php')); exit(); }
+if (!$request_id) { header("Location: dashboard_tech.php"); exit(); }
 
 $page_title = 'รายละเอียดงานซ่อม';
 
-// SQL Query ดึงข้อมูลครบ (รวมตำแหน่ง/กลุ่มงาน)
+// SQL Query ดึงข้อมูลครบ
 $sql = "SELECT rr.*, a.asset_number, a.asset_type, a.location_group,
         s_req.full_name AS requester_name, s_req.position AS requester_position, s_req.group_name AS requester_group,
         s_tech.full_name AS technician_name 
@@ -29,151 +29,290 @@ $request = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$request) { die("ไม่พบข้อมูล"); }
 if ($user_role == 'requester' && $request['requester_id'] != $current_staff_id) { die("ไม่มีสิทธิ์เข้าถึง"); }
 
+// Logic แสดงผลข้อมูล
 $asset_show = !empty($request['asset_number']) ? $request['asset_number'] : ($request['manual_asset'] ?: '-');
-$type_show = !empty($request['asset_type']) ? $request['asset_type'] : '-';
+$type_show = !empty($request['asset_type']) ? $request['asset_type'] : ($request['problem_types'] ?: '-');
 
 include 'includes/header.php'; 
 ?>
 
 <style>
-    /* ---- Single Screen CSS ---- */
-    body { overflow: hidden; }
+    /* ---- Global Layout Lock ---- */
+    html, body { height: 100%; margin: 0; overflow: hidden; background-color: var(--bg-body); }
     
+    /* Wrapper หลัก */
     .single-view-wrapper {
-        height: calc(100vh - 90px);
-        max-width: 1400px;
+        height: calc(100vh - 80px); /* ลบความสูง Header */
+        max-width: 1600px;
         margin: 0 auto;
-        padding: 10px 20px;
-        display: flex; flex-direction: column; gap: 15px;
+        padding: 15px 25px 25px 25px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
     }
-    .view-header { display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
-    .view-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; flex-grow: 1; min-height: 0; overflow: hidden; }
-    .col-left-scroll { overflow-y: auto; padding-right: 5px; display: flex; flex-direction: column; gap: 15px; }
-    .col-right-fixed { display: flex; flex-direction: column; height: 100%; overflow: hidden; gap: 15px; }
-    
-    /* Info Card Styles */
-    .info-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: var(--shadow); }
-    .info-head { font-weight: 700; color: var(--primary); margin-bottom: 10px; border-bottom: 1px dashed var(--border); padding-bottom: 5px; font-size: 1rem; }
-    .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.95rem; color: var(--text-main); }
-    .info-label { color: var(--text-muted); }
-    .issue-box { background: var(--input-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border); color: var(--text-main); }
 
-    /* Image & Action Styles */
-    .image-scroll-area { flex: 1; overflow-y: auto; min-height: 0; background: var(--input-bg); border-radius: 12px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; padding: 10px; }
-    .image-scroll-area img { max-width: 100%; max-height: 100%; object-fit: contain; cursor: pointer; }
-    .action-panel { flex-shrink: 0; background: var(--card-bg); border: 1px solid #bfdbfe; border-top: 4px solid var(--primary); border-radius: 12px; padding: 20px; box-shadow: 0 -5px 15px rgba(0,0,0,0.05); z-index: 10; }
+    /* 1. Header Bar */
+    .view-header {
+        display: flex; justify-content: space-between; align-items: center;
+        flex-shrink: 0; padding: 15px 25px;
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
+    }
+    .view-header h1 { margin: 0; font-size: 1.4rem; color: var(--text-main); font-weight: 800; display: flex; align-items: center; gap: 10px; }
+    .job-badge { background: var(--info-bg); color: var(--info); padding: 5px 15px; border-radius: 50px; font-size: 0.9rem; font-weight: 700; border: 1px solid var(--info); }
 
-    /* Print & Mobile */
+    /* 2. Main Grid Layout */
+    .view-grid {
+        display: grid;
+        grid-template-columns: 400px 1fr; /* ซ้าย 400px, ขวายืดเต็ม */
+        gap: 20px;
+        flex-grow: 1;    /* ยืดเต็มความสูงที่เหลือ */
+        min-height: 0;   /* ป้องกัน Grid ล้น */
+        overflow: hidden;
+    }
+
+    /* --- คอลัมน์ซ้าย (ข้อมูล) --- */
+    .col-sidebar {
+        background: #fff;
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow);
+        padding: 20px;
+        overflow-y: auto; /* เลื่อนได้ถ้าข้อมูลเยอะ */
+        display: flex; flex-direction: column; gap: 25px;
+    }
+    .sidebar-group-title {
+        font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;
+        margin-bottom: 15px; border-bottom: 2px solid var(--bg-body); padding-bottom: 5px;
+    }
+    .info-item { margin-bottom: 12px; display: flex; justify-content: space-between; align-items: baseline; font-size: 0.95rem; }
+    .info-label { color: var(--text-muted); font-size: 0.85rem; }
+    .info-value { font-weight: 600; color: var(--text-main); text-align: right; }
+
+    /* --- คอลัมน์ขวา (พื้นที่ทำงาน) --- */
+    .col-workspace {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        height: 100%;
+        overflow: hidden;
+    }
+
+    /* ส่วนบน: อาการ + รูปภาพ */
+    .workspace-content {
+        flex: 1; /* กินพื้นที่ที่เหลือทั้งหมด */
+        min-height: 0; /* ยอมให้หดได้ */
+        overflow-y: auto; /* เลื่อนได้ */
+        display: flex; flex-direction: column; gap: 20px;
+        padding-right: 5px;
+    }
+
+    /* กล่องอาการเสีย */
+    .issue-card {
+        background: #fff; border-radius: 16px; padding: 20px; border: 1px solid var(--border); box-shadow: var(--shadow); flex-shrink: 0;
+    }
+    .issue-text { background: var(--input-bg); padding: 15px; border-radius: 10px; border: 1px solid var(--border); line-height: 1.6; }
+
+    /* กล่องรูปภาพ */
+    .image-card {
+        background: #27272a; /* พื้นหลังสีเข้ม */
+        border-radius: 16px;
+        display: flex; align-items: center; justify-content: center;
+        overflow: hidden;
+        position: relative;
+        min-height: 250px; /* ความสูงขั้นต่ำ */
+        box-shadow: var(--shadow);
+    }
+    .image-card img {
+        max-width: 100%; max-height: 400px; /* จำกัดความสูงรูปไม่ให้กินที่เกินไป */
+        object-fit: contain; cursor: zoom-in;
+        transition: transform 0.3s;
+    }
+    .image-card:hover img { transform: scale(1.02); }
+
+    /* ส่วนล่าง: ฟอร์มจัดการ (Sticky Bottom) */
+    .action-bar {
+        flex-shrink: 0; /* ห้ามหด */
+        background: #fff;
+        border-radius: 16px;
+        padding: 20px;
+        border: 2px solid var(--primary);
+        box-shadow: 0 -5px 20px rgba(0,0,0,0.05);
+        z-index: 10;
+        animation: slideUp 0.5s ease-out;
+    }
+    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+    /* Print Styles */
     .paper-header, .signature-section { display: none; }
-    @media print { body { overflow: auto; height: auto; } .site-header, .no-print, .btn-primary, footer, .view-header { display: none !important; } .single-view-wrapper { height: auto; display: block; } .view-grid { display: block; } .paper-header, .signature-section { display: block; } .action-panel { display: none; } }
-    @media (max-width: 900px) { body { overflow: auto; } .single-view-wrapper { height: auto; } .view-grid { grid-template-columns: 1fr; } .col-right-fixed { height: auto; } .image-scroll-area { min-height: 250px; } }
+    @media print {
+        body { overflow: auto; height: auto; background: white; }
+        .site-header, .no-print, .btn-primary, .view-header, .action-bar { display: none !important; }
+        .single-view-wrapper { height: auto; display: block; padding: 0; }
+        .view-grid { display: block; }
+        .col-sidebar, .col-workspace, .workspace-content { overflow: visible; height: auto; border: none; box-shadow: none; padding: 0; }
+        .image-card { background: none; border: 1px solid #ccc; }
+        .image-card img { max-height: 200px; }
+        .paper-header, .signature-section { display: block; }
+        .print-row { display: flex; gap: 20px; margin-bottom: 10px; }
+        .print-col { flex: 1; border: 1px solid #ccc; padding: 10px; }
+    }
+    @media (max-width: 1024px) {
+        body { overflow: auto; }
+        .single-view-wrapper { height: auto; }
+        .view-grid { grid-template-columns: 1fr; }
+        .col-workspace { height: auto; }
+    }
 </style>
 
 <div class="single-view-wrapper" id="printable-area">
     
     <div class="view-header no-print">
         <div>
-            <h1 style="margin:0; font-size:1.5rem; color:var(--text-main);">🛠️ รายละเอียดงานซ่อม</h1>
-            <span style="color:var(--text-muted); font-size:0.9rem;">เลขที่: <b><?php echo htmlspecialchars($request['request_no']); ?></b></span>
+            <h1><i class="fa-solid fa-file-invoice"></i> รายละเอียดงานซ่อม</h1>
         </div>
-        <div style="display:flex; gap:10px;">
-            <a href="<?php echo $is_tech_or_admin ? 'dashboard_tech.php' : 'tracking.php'; ?>" class="btn-detail">⬅ กลับ</a>
-            <button onclick="window.print()" class="btn-detail" style="background:#64748b; color:white; border:none;">🖨️ พิมพ์ PDF</button>
+        <div style="display:flex; gap:10px; align-items:center;">
+            <span class="job-badge">JOB: <?php echo htmlspecialchars($request['request_no']); ?></span>
+            <div style="height:20px; width:1px; background:#e2e8f0; margin:0 5px;"></div>
+            <a href="<?php echo $is_tech_or_admin ? 'dashboard_tech.php' : 'tracking.php'; ?>" class="btn-detail" style="border-radius:50px; padding:8px 20px;">
+                <i class="fa-solid fa-arrow-left"></i> กลับ
+            </a>
+            <button onclick="window.print()" class="btn-detail" style="background:#475569; color:white; border:none; border-radius:50px; padding:8px 20px;">
+                <i class="fa-solid fa-print"></i> พิมพ์
+            </button>
         </div>
     </div>
 
     <div class="paper-header">
-        <h2 style="margin:0; font-size:16pt;">ใบแจ้งซ่อมครุภัณฑ์คอมพิวเตอร์</h2>
-        <p style="margin:5px 0;">สำนักงานเขตพื้นที่การศึกษาประถมศึกษาชลบุรี เขต 2</p>
-        <div style="font-size:10pt; text-align:right;">เลขที่: <?php echo htmlspecialchars($request['request_no']); ?></div>
+        <h2 style="text-align:center; margin:0;">ใบแจ้งซ่อมครุภัณฑ์คอมพิวเตอร์</h2>
+        <div style="text-align:right; font-size:10pt;">เลขที่: <?php echo htmlspecialchars($request['request_no']); ?></div>
+        <hr>
     </div>
 
     <div class="view-grid">
-        <div class="col-left-scroll">
-            
-            <div class="info-card">
-                <div class="info-head">👤 ข้อมูลผู้แจ้ง</div>
-                <div class="info-row"><span class="info-label">ชื่อ-สกุล:</span><span><?php echo htmlspecialchars($request['requester_name']); ?></span></div>
-                <div class="info-row"><span class="info-label">ตำแหน่ง:</span><span><?php echo htmlspecialchars($request['requester_position'] ?: '-'); ?></span></div>
-                <div class="info-row"><span class="info-label">กลุ่ม/ฝ่าย:</span><span><?php echo htmlspecialchars($request['requester_group'] ?: '-'); ?></span></div>
-                <hr style="margin:10px 0; border:0; border-top:1px dashed var(--border);">
-                <div class="info-row"><span class="info-label">วันที่แจ้ง:</span><span><?php echo date('d/m/Y H:i', strtotime($request['request_date'])); ?></span></div>
+        
+        <div class="col-sidebar">
+            <div style="text-align:center; padding:15px; background:var(--input-bg); border-radius:12px;">
+                <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:5px;">สถานะปัจจุบัน</div>
+                <span class="status-badge status-<?php echo strtolower(str_replace(' ', '_', $request['status'])); ?>" style="font-size:1rem; padding:8px 20px;">
+                    <?php echo $request['status']; ?>
+                </span>
             </div>
 
-            <div class="info-card">
-                <div class="info-head">💻 ข้อมูลครุภัณฑ์</div>
-                <div class="info-row"><span class="info-label">ทะเบียน:</span><strong><?php echo htmlspecialchars($asset_show); ?></strong></div>
-                <div class="info-row"><span class="info-label">ชนิด:</span><span><?php echo htmlspecialchars($type_show); ?></span></div>
-                <div class="info-row">
-                    <span class="info-label">สถานะ:</span>
-                    <span class="status-badge status-<?php echo strtolower(str_replace(' ','_',$request['status'])); ?>"><?php echo $request['status']; ?></span>
-                </div>
+            <div>
+                <div class="sidebar-group-title">👤 ข้อมูลผู้แจ้ง</div>
+                <div class="info-item"><span class="info-label">ชื่อ-สกุล</span><span class="info-value"><?php echo htmlspecialchars($request['requester_name']); ?></span></div>
+                <div class="info-item"><span class="info-label">ตำแหน่ง</span><span class="info-value"><?php echo htmlspecialchars($request['requester_position'] ?: '-'); ?></span></div>
+                <div class="info-item"><span class="info-label">กลุ่ม/ฝ่าย</span><span class="info-value"><?php echo htmlspecialchars($request['requester_group'] ?: '-'); ?></span></div>
+                <div class="info-item"><span class="info-label">วันที่แจ้ง</span><span class="info-value"><?php echo date('d/m/Y H:i', strtotime($request['request_date'])); ?></span></div>
             </div>
 
-            <div class="info-card">
-                <div class="info-head">⚠️ อาการที่พบ</div>
-                <div class="issue-box"><?php echo nl2br(htmlspecialchars($request['issue_details'])); ?></div>
+            <div>
+                <div class="sidebar-group-title">💻 ข้อมูลอุปกรณ์</div>
+                <div class="info-item"><span class="info-label">ทะเบียน</span><span class="info-value"><?php echo htmlspecialchars($asset_show); ?></span></div>
+                <div class="info-item"><span class="info-label">ชนิด</span><span class="info-value"><?php echo htmlspecialchars($type_show); ?></span></div>
+                <div class="info-item"><span class="info-label">ที่ตั้ง</span><span class="info-value"><?php echo htmlspecialchars($request['location_group'] ?: '-'); ?></span></div>
             </div>
 
             <?php if ($request['action_taken']): ?>
-            <div class="info-card" style="border-left: 4px solid var(--success);">
-                <div class="info-head" style="color:var(--success);">✅ ผลการดำเนินการ</div>
-                <p style="color:var(--text-main);"><?php echo nl2br(htmlspecialchars($request['action_taken'])); ?></p>
-                <div style="margin-top:10px; font-size:0.85rem; color:var(--text-muted);">
-                    โดย: <?php echo htmlspecialchars($request['technician_name']); ?>
-                </div>
+            <div style="margin-top:auto; background:#f0fdf4; padding:15px; border-radius:12px; border:1px solid #bbf7d0;">
+                <div style="font-weight:700; color:#15803d; margin-bottom:5px;">✅ ดำเนินการแล้ว</div>
+                <div style="font-size:0.9rem; color:#1e293b;"><?php echo nl2br(htmlspecialchars($request['action_taken'])); ?></div>
+                <div style="font-size:0.8rem; color:#64748b; margin-top:5px; text-align:right;">โดย: <?php echo htmlspecialchars($request['technician_name']); ?></div>
             </div>
             <?php endif; ?>
         </div>
 
-        <div class="col-right-fixed">
-            <div class="image-scroll-area">
-                <?php if (!empty($request['image_path']) && file_exists($request['image_path'])): ?>
-                    <img src="<?php echo htmlspecialchars($request['image_path']); ?>" onclick="window.open(this.src)" title="คลิกเพื่อดูภาพใหญ่">
-                <?php else: ?>
-                    <div style="color:var(--text-muted); text-align:center;">
-                        <div style="font-size:3rem;">🖼️</div><p>ไม่มีรูปภาพประกอบ</p>
-                    </div>
-                <?php endif; ?>
+        <div class="col-workspace">
+            
+            <div class="workspace-content">
+                <div class="issue-card">
+                    <h3 style="margin:0 0 10px 0; font-size:1.1rem; color:var(--danger); display:flex; align-items:center; gap:8px;">
+                        <i class="fa-solid fa-triangle-exclamation"></i> อาการที่พบ
+                    </h3>
+                    <div class="issue-text"><?php echo nl2br(htmlspecialchars($request['issue_details'])); ?></div>
+                </div>
+
+                <div class="image-card">
+                    <?php if (!empty($request['image_path']) && file_exists($request['image_path'])): ?>
+                        <img src="<?php echo htmlspecialchars($request['image_path']); ?>" onclick="window.open(this.src)">
+                        <div style="position:absolute; bottom:15px; right:15px; background:rgba(0,0,0,0.6); color:white; padding:5px 12px; border-radius:30px; font-size:0.8rem; backdrop-filter:blur(4px);">
+                            <i class="fa-solid fa-expand"></i> ดูภาพขยาย
+                        </div>
+                    <?php else: ?>
+                        <div style="color:rgba(255,255,255,0.4); text-align:center;">
+                            <i class="fa-regular fa-image" style="font-size:3rem; margin-bottom:10px; display:block;"></i>
+                            ไม่มีรูปภาพ
+                        </div>
+                    <?php endif; ?>
+                </div>
             </div>
 
             <div class="no-print">
             <?php if ($is_tech_or_admin): ?>
+                
                 <?php if (trim(strtolower($request['status'])) == 'in progress'): ?>
-                    <div class="action-panel">
-                        <h3 style="color:var(--primary); font-size:1rem; margin-bottom:10px; margin-top:0;">🛠️ บันทึกการซ่อม</h3>
-                        <form id="repairForm" method="POST" action="submit_repair_action.php">
+                    <div class="action-bar">
+                        <div style="font-weight:700; color:var(--primary); margin-bottom:10px; display:flex; align-items:center; gap:8px;">
+                            <i class="fa-solid fa-wrench"></i> บันทึกผลการซ่อม
+                        </div>
+                        <form id="repairForm" method="POST" action="submit_repair_action.php" style="display:flex; gap:15px;">
                             <input type="hidden" name="request_id" value="<?php echo htmlspecialchars($request['request_id']); ?>">
-                            <div class="form-group" style="margin-bottom:10px;">
-                                <textarea name="action_taken" rows="3" required placeholder="ระบุสิ่งที่ทำไป..." style="width:100%; padding:10px; border-radius:8px; border:2px solid var(--border); background:var(--input-bg); color:var(--text-main);"></textarea>
-                            </div>
-                            <button type="button" onclick="confirmSave(event)" class="btn-primary" style="width:100%; padding:10px;">✅ บันทึกและปิดงาน</button>
                             <input type="hidden" name="action" value="complete">
+                            
+                            <textarea name="action_taken" rows="2" required placeholder="ระบุสิ่งที่ดำเนินการแก้ไข..." 
+                                      style="flex-grow:1; padding:12px; border-radius:10px; border:2px solid var(--border); font-size:1rem; resize:none; background:var(--input-bg); color:var(--text-main);"></textarea>
+                            
+                            <button type="button" onclick="confirmSave(event)" class="btn-primary" style="flex-shrink:0; padding:0 30px; border-radius:10px; font-size:1rem;">
+                                <i class="fa-solid fa-check"></i><br>ปิดงาน
+                            </button>
                         </form>
                     </div>
+
                 <?php elseif (trim(strtolower($request['status'])) == 'pending'): ?>
-                    <div style="text-align:center; padding:15px; background:var(--card-bg); border-radius:12px; border:1px solid var(--border); flex-shrink:0;">
-                         <div class="alert alert-danger" style="margin-bottom:10px;">⚠️ กรุณากดรับงานก่อน</div>
-                         <a href="#" onclick="confirmAccept(event, '<?php echo $request['request_id']; ?>', '<?php echo $request['request_no']; ?>');" class="btn-action" style="width:100%; justify-content:center; padding:10px;">🚀 กดรับงานเดี๋ยวนี้</a>
+                    <div class="action-bar" style="border-color:var(--warning); background:#fffbeb;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+                            <div style="display:flex; align-items:center; gap:15px;">
+                                <div style="font-size:2rem; color:var(--warning);">⚠️</div>
+                                <div>
+                                    <h3 style="margin:0; font-size:1rem; color:#92400e;">รอรับเรื่อง</h3>
+                                    <p style="margin:0; font-size:0.9rem; color:#b45309;">กดปุ่มรับงานเพื่อเริ่มดำเนินการ</p>
+                                </div>
+                            </div>
+                            <a href="#" onclick="confirmAccept(event, '<?php echo $request['request_id']; ?>');" class="btn-action" style="padding:12px 30px; border-radius:50px; font-size:1rem; box-shadow:0 4px 10px rgba(0,0,0,0.1);">
+                                🚀 รับงานเดี๋ยวนี้
+                            </a>
+                        </div>
                     </div>
                 <?php endif; ?>
+
             <?php endif; ?>
             </div>
         </div>
     </div>
-    
-    <div class="signature-section">
+
+    <div class="signature-section" style="margin-top:30px;">
+        <div style="display:flex; justify-content:space-between;">
+            <div style="text-align:center; width:40%;">
+                <div style="border-bottom:1px dotted #000; height:30px;"></div><p>ผู้แจ้ง</p>
+            </div>
+            <div style="text-align:center; width:40%;">
+                <div style="border-bottom:1px dotted #000; height:30px;"></div><p>ผู้ดำเนินการ</p>
+            </div>
         </div>
+    </div>
 </div>
 
 <script>
 function confirmSave(e) {
     e.preventDefault();
-    Swal.fire({ title: 'ยืนยันการปิดงาน?', text: "ตรวจสอบข้อมูลเรียบร้อยแล้วใช่หรือไม่", icon: 'question', showCancelButton: true, confirmButtonText: 'ใช่, บันทึกเลย', cancelButtonText: 'ยกเลิก' }).then((result) => { if (result.isConfirmed) { document.getElementById('repairForm').submit(); } });
+    Swal.fire({ title: 'ยืนยันปิดงาน?', text: "ตรวจสอบความถูกต้องแล้วใช่หรือไม่", icon: 'question', showCancelButton: true, confirmButtonText: 'ใช่, บันทึก', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#2563eb' }).then((r) => { if (r.isConfirmed) document.getElementById('repairForm').submit(); });
 }
-function confirmAccept(e, id, no) {
+function confirmAccept(e, id) {
     e.preventDefault();
-    Swal.fire({ title: 'ยืนยันรับงาน?', text: "คุณต้องการรับผิดชอบงานซ่อมนี้ใช่หรือไม่", icon: 'question', showCancelButton: true, confirmButtonText: 'ใช่, รับงาน', cancelButtonText: 'ยกเลิก' }).then((result) => { if (result.isConfirmed) { window.location.href = 'update_status.php?action=accept&id=' + id; } });
+    Swal.fire({ title: 'ยืนยันรับงาน?', text: "คุณต้องการรับงานนี้ใช่หรือไม่", icon: 'question', showCancelButton: true, confirmButtonText: 'ใช่, รับงาน', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#3b82f6' }).then((r) => { if (r.isConfirmed) window.location.href = 'update_status.php?action=accept&id=' + id; });
 }
 </script>
 
