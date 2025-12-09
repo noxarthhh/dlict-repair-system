@@ -135,9 +135,12 @@ include 'includes/header.php';
     <div class="slider-container">
         <div class="swiper mySwiper">
             <div class="swiper-wrapper">
-                <div class="swiper-slide"><img src="https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=1200" alt="Slide 1"></div>
-                <div class="swiper-slide"><img src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?q=80&w=1200" alt="Slide 2"></div>
-                <div class="swiper-slide"><img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1200" alt="Slide 3"></div>
+                <div class="swiper-slide"><img src="slides/1.jpg" alt="Slide 1"></div>
+                <div class="swiper-slide"><img src="slides/2.jpg" alt="Slide 2"></div>
+                <div class="swiper-slide"><img src="slides/3.jpg" alt="Slide 3"></div>
+                <div class="swiper-slide"><img src="slides/4.jpg" alt="Slide 4"></div>
+                <div class="swiper-slide"><img src="slides/5.jpg" alt="Slide 5"></div>
+                <div class="swiper-slide"><img src="slides/6.jpg" alt="Slide 6"></div>
             </div>
             <div class="swiper-button-next"></div>
             <div class="swiper-button-prev"></div>
