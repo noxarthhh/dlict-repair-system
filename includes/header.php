@@ -44,13 +44,13 @@ $time_str = date('H:i') . ' น.';
                     
                     <?php if ($user_role == 'technician' || $user_role == 'admin'): ?>
                         <a href="dashboard_tech.php" class="<?php echo basename($_SERVER['PHP_SELF'])=='dashboard_tech.php'?'active':''; ?>">
-                            <i class="fa-solid fa-gauge"></i> Dashboard
+                            <i class="fa-solid fa-gauge"></i> ตารางการจัดการ
                         </a>
                     <?php endif; ?>
 
                     <?php if ($user_role == 'admin'): ?>
                         <a href="admin_report.php" class="<?php echo basename($_SERVER['PHP_SELF'])=='admin_report.php'?'active':''; ?>">
-                            <i class="fa-solid fa-chart-pie"></i> รายงาน
+                            <i class="fa-solid fa-chart-pie"></i> แดชบอร์ดรายงาน
                         </a>
                         <a href="admin_add_user.php" class="<?php echo basename($_SERVER['PHP_SELF'])=='admin_add_user.php'?'active':''; ?>">
                             <i class="fa-solid fa-user-plus"></i> เพิ่มผู้ใช้
@@ -78,7 +78,7 @@ $time_str = date('H:i') . ' น.';
                 <?php if ($logged_in): ?>
                     <div class="user-info">
                         <span class="user-name">
-                            <i class="fa-solid fa-circle-user"></i> 
+                            <i class="fa-solid fa-circle-user" style="font-size: 36px; vertical-align: middle; margin-right: 5px; color: var(--primary);"></i>
                             <?php echo htmlspecialchars($full_name); ?> 
                             <small>(<?php echo ucfirst($user_role); ?>)</small>
                         </span>
