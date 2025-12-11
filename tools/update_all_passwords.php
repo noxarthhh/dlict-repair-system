@@ -20,6 +20,13 @@ echo '<style>
     th { background-color: #f2f2f2; }
 </style>';
 
+// Restrict this utility to local requests only
+if (!in_array($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1', ['127.0.0.1','::1','localhost'])) {
+    header('HTTP/1.1 403 Forbidden');
+    echo "Forbidden: run this locally only.";
+    exit;
+}
+
 require_once __DIR__ . '/../db_connect.php';
 
 $default_password = 'password123';

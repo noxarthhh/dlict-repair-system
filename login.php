@@ -11,21 +11,27 @@ session_start();
 include 'db_connect.php'; 
 
 // =========================================================================
-// 2. Logout handler
+// 2. Logout handler (จัดการการออกจากระบบ)
 // =========================================================================
 if (isset($_GET['logout'])) {
     session_unset();
     session_destroy();
+    
+    // ลบคุกกี้ Session ID
     if (ini_get("session.use_cookies")) {
         $params = session_get_cookie_params();
-        setcookie(session_name(), '', time() - 42000, $params["path"], $params["domain"], $params["secure"], $params["httponly"]);
+        setcookie(session_name(), '', time() - 42000,
+            $params["path"], $params["domain"],
+            $params["secure"], $params["httponly"]
+        );
     }
+    
     header('Location: login.php');
     exit();
 }
 
 // =========================================================================
-// 3. ถ้า Login ค้างไว้ -> ไปหน้า Home
+// 3. ถ้า Login ค้างไว้ -> ไปหน้า home.php ทันที
 // =========================================================================
 if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === TRUE) {
     header("Location: home.php");
@@ -35,16 +41,38 @@ if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === TRUE) {
 // =========================================================================
 // 4. ฟังก์ชันความปลอดภัย (Brute Force & Logging)
 // =========================================================================
+
 function checkBruteForce($pdo, $username) {
-    $max_attempts = 5; $lockout_time = 900; 
-    $stmt = $pdo->prepare("SELECT COUNT(*) as attempts FROM login_attempts WHERE username = ? AND attempt_time > DATE_SUB(NOW(), INTERVAL ? SECOND) AND success = 0");
+    $max_attempts = 5;
+    $lockout_time = 900; // 15 นาที
+    
+    $stmt = $pdo->prepare("
+        SELECT COUNT(*) as attempts 
+        FROM login_attempts 
+        WHERE username = ? 
+        AND attempt_time > DATE_SUB(NOW(), INTERVAL ? SECOND)
+        AND success = 0
+    ");
     $stmt->execute([$username, $lockout_time]);
-    return ($stmt->fetch(PDO::FETCH_ASSOC)['attempts'] >= $max_attempts);
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    return ($result['attempts'] >= $max_attempts);
 }
 
 function logLoginAttempt($pdo, $username, $success, $ip_address) {
     try {
-        $pdo->exec("CREATE TABLE IF NOT EXISTS login_attempts (id INT AUTO_INCREMENT PRIMARY KEY, username VARCHAR(40) NOT NULL, ip_address VARCHAR(45), success TINYINT(1) DEFAULT 0, attempt_time DATETIME DEFAULT CURRENT_TIMESTAMP, INDEX idx_username_time (username, attempt_time)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        // สร้างตารางเก็บ Log ถ้ายังไม่มี
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS login_attempts (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                username VARCHAR(40) NOT NULL,
+                ip_address VARCHAR(45),
+                success TINYINT(1) DEFAULT 0,
+                attempt_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_username_time (username, attempt_time)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        ");
+        
         $stmt = $pdo->prepare("INSERT INTO login_attempts (username, ip_address, success) VALUES (?, ?, ?)");
         $stmt->execute([$username, $ip_address, $success ? 1 : 0]);
     } catch (PDOException $e) { }
@@ -63,11 +91,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (empty($username) || empty($password)) {
         $error_message = "กรุณากรอกชื่อผู้ใช้งานและรหัสผ่าน";
     } else {
-        // (ส่วน Log เหมือนเดิม)
+        // กรองตัวอักษรแปลกปลอมเพื่อความปลอดภัย
         $u_safe = preg_replace('/[^A-Za-z0-9_@.\-ก-๙ ]/', '', $username);
 
         if (checkBruteForce($pdo, $username)) {
-            $error_message = "บัญชีนี้ถูกระงับชั่วคราว กรุณาลองใหม่ใน 15 นาที";
+            $error_message = "บัญชีนี้ถูกระงับชั่วคราวเนื่องจากพยายามเข้าสู่ระบบผิดหลายครั้ง กรุณาลองใหม่ใน 15 นาที";
             logLoginAttempt($pdo, $username, false, $ip_address);
         } else {
             try {
@@ -76,7 +104,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
                 if ($user && !empty($user['password_hash']) && password_verify($password, trim($user['password_hash']))) {
+                    // ✅ Login Success
                     session_regenerate_id(true);
+                    
                     $_SESSION['logged_in'] = TRUE;
                     $_SESSION['staff_id'] = $user['staff_id'];
                     $_SESSION['full_name'] = $user['full_name'];
@@ -84,21 +114,27 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $_SESSION['login_time'] = time();
                     
                     logLoginAttempt($pdo, $username, true, $ip_address);
+                    
+                    // Redirect ไปหน้า Home
                     header("Location: home.php");
                     exit();
+
                 } else {
+                    // ❌ Login Failed
                     $error_message = "ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง";
                     logLoginAttempt($pdo, $username, false, $ip_address);
                 }
-            } catch (PDOException $e) { $error_message = "ระบบขัดข้อง กรุณาลองใหม่"; }
+            } catch (PDOException $e) {
+                $error_message = "ระบบฐานข้อมูลขัดข้อง กรุณาลองใหม่อีกครั้ง";
+            }
         }
     }
 }
 
 // =========================================================================
-// 6. ส่วน HTML/Frontend (Premium + Logo)
+// 6. ส่วน HTML/Frontend (Design + Logo + Register Button)
 // =========================================================================
-$page_title = 'เข้าสู่ระบบ';
+$page_title = 'เข้าสู่ระบบ - ระบบแจ้งซ่อม DLICT';
 include 'includes/header.php';
 ?>
 
@@ -117,39 +153,49 @@ include 'includes/header.php';
     /* Layout จัดกลาง */
     .login-wrapper {
         height: calc(100vh - 80px);
-        display: flex; justify-content: center; align-items: center; padding: 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
     }
 
-    /* การ์ด Login กระจก */
+    /* การ์ด Login กระจกฝ้า */
     .login-card {
-        width: 100%; max-width: 450px;
-        background: rgba(255,255,255,0.85); backdrop-filter: blur(20px);
-        border-radius: 24px; padding: 40px;
+        width: 100%;
+        max-width: 450px;
+        background: rgba(255,255,255,0.85);
+        backdrop-filter: blur(20px);
+        border-radius: 24px;
+        padding: 40px;
         border: 1px solid rgba(255,255,255,0.6);
         box-shadow: 0 20px 50px rgba(0,0,0,0.1);
         text-align: center;
         animation: zoomIn 0.5s;
     }
 
-    /* 🌟 Logo Area */
+    /* โลโก้ */
     .logo-container {
-        width: 100px; height: 100px; margin: 0 auto 20px;
-        background: #fff; border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
+        width: 100px;
+        height: 100px;
+        margin: 0 auto 20px;
+        background: #fff;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         box-shadow: 0 10px 20px rgba(0,0,0,0.1);
         animation: bounceIn 1s;
     }
     .logo-container img {
-        width: 70%; height: auto; /* ปรับขนาดรูปโลโก้ */
+        width: 70%;
+        height: auto;
     }
-    /* ถ้าไม่มีรูป ให้แสดงไอคอนแทน */
-    .logo-container i { font-size: 3rem; color: var(--primary); }
 
-    /* Typography */
+    /* ข้อความหัวข้อ */
     .login-title { font-size: 1.8rem; font-weight: 800; color: #1e293b; margin-bottom: 5px; }
     .login-subtitle { color: #64748b; margin-bottom: 30px; font-size: 0.95rem; }
 
-    /* Inputs */
+    /* กล่อง Input */
     .input-group { position: relative; margin-bottom: 20px; text-align: left; }
     .input-group label { display: block; font-weight: 700; color: #475569; margin-bottom: 8px; font-size: 0.9rem; }
     .input-wrapper { position: relative; }
@@ -162,7 +208,7 @@ include 'includes/header.php';
     }
     .form-control:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); outline: none; }
 
-    /* Button */
+    /* ปุ่ม Login (สีหลัก) */
     .btn-login {
         width: 100%; padding: 14px;
         background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
@@ -173,7 +219,34 @@ include 'includes/header.php';
     }
     .btn-login:hover { transform: translateY(-3px); box-shadow: 0 15px 30px -5px rgba(37, 99, 235, 0.5); }
 
-    /* Alert */
+    /* 🌟 ปุ่ม Register (สีรอง/ขอบใส) */
+    .btn-register {
+        display: inline-block;
+        width: 100%;
+        padding: 12px;
+        background: transparent;
+        color: #64748b;
+        border: 2px solid #cbd5e1;
+        border-radius: 50px;
+        font-size: 1rem;
+        font-weight: 600;
+        text-decoration: none;
+        margin-top: 15px;
+        transition: 0.3s;
+    }
+    .btn-register:hover {
+        background: #f1f5f9;
+        color: #334155;
+        border-color: #94a3b8;
+        transform: translateY(-2px);
+    }
+    
+    /* เส้นคั่น (Divider) */
+    .divider { margin: 20px 0; position: relative; text-align: center; }
+    .divider::before { content: ''; position: absolute; top: 50%; left: 0; width: 100%; height: 1px; background: #e2e8f0; }
+    .divider span { position: relative; background: rgba(255,255,255,0.9); padding: 0 10px; color: #94a3b8; font-size: 0.85rem; }
+
+    /* Alert Box */
     .alert-box {
         background: #fef2f2; color: #dc2626; border: 1px solid #fecaca;
         padding: 12px; border-radius: 10px; margin-bottom: 20px; font-size: 0.9rem;
@@ -201,7 +274,7 @@ include 'includes/header.php';
             <div class="input-group">
                 <label>ชื่อผู้ใช้งาน / อีเมล</label>
                 <div class="input-wrapper">
-                    <input type="text" name="username" class="form-control" required placeholder="ระบุ Username..." autofocus>
+                    <input type="text" name="username" class="form-control" required placeholder="ระบุ Username / Email..." autofocus>
                     <i class="fa-solid fa-user"></i>
                 </div>
             </div>
@@ -218,6 +291,12 @@ include 'includes/header.php';
                 เข้าสู่ระบบ <i class="fa-solid fa-arrow-right" style="margin-left:5px;"></i>
             </button>
         </form>
+        
+        <div class="divider"><span>หรือ</span></div>
+        
+        <a href="register.php" class="btn-register">
+            <i class="fa-solid fa-user-plus"></i> สมัครสมาชิกใหม่
+        </a>
         
         <div style="margin-top: 25px; font-size: 0.85rem; color: #94a3b8;">
             © <?php echo date('Y'); ?> DLICT Repair System

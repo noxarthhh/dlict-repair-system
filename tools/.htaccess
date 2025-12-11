@@ -1,0 +1,2 @@
+# Deny web access to tools folder
+Require all denied

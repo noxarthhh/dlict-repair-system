@@ -60,6 +60,8 @@ try {
     header("Location: new_request.php?status=success&no=" . $request_no);
 
 } catch (PDOException $e) {
-    header("Location: new_request.php?status=error&msg=" . urlencode($e->getMessage()));
+    // Log internal error and redirect with a generic message
+    error_log(date('[Y-m-d H:i:s] ') . "submit_request.php: " . $e->getMessage() . PHP_EOL, 3, __DIR__ . '/logs/app_errors.log');
+    header("Location: new_request.php?status=error&msg=" . urlencode("ระบบเกิดข้อผิดพลาด กรุณาลองใหม่"));
 }
 ?>

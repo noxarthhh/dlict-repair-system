@@ -9,11 +9,11 @@ $user_role = $_SESSION['user_role'];
 $is_tech_or_admin = ($user_role == 'technician' || $user_role == 'admin');
 $request_id = $_GET['id'] ?? null;
 
-if (!$request_id) { header("Location: dashboard_tech.php"); exit(); }
+if (!$request_id) { header("Location: " . ($is_tech_or_admin ? 'dashboard_tech.php' : 'tracking.php')); exit(); }
 
 $page_title = 'รายละเอียดงานซ่อม';
 
-// SQL Query ดึงข้อมูลครบ
+// SQL Query
 $sql = "SELECT rr.*, a.asset_number, a.asset_type, a.location_group,
         s_req.full_name AS requester_name, s_req.position AS requester_position, s_req.group_name AS requester_group,
         s_tech.full_name AS technician_name 
@@ -29,7 +29,6 @@ $request = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$request) { die("ไม่พบข้อมูล"); }
 if ($user_role == 'requester' && $request['requester_id'] != $current_staff_id) { die("ไม่มีสิทธิ์เข้าถึง"); }
 
-// Logic แสดงผลข้อมูล
 $asset_show = !empty($request['asset_number']) ? $request['asset_number'] : ($request['manual_asset'] ?: '-');
 $type_show = !empty($request['asset_type']) ? $request['asset_type'] : ($request['problem_types'] ?: '-');
 
@@ -37,15 +36,18 @@ include 'includes/header.php';
 ?>
 
 <style>
-    /* ---- Global Layout Lock ---- */
-    html, body { height: 100%; margin: 0; overflow: hidden; background-color: var(--bg-body); }
+    /* ---- Global Layout Lock (ปิดตาย Scrollbar หลัก) ---- */
+    * { box-sizing: border-box; } /* สำคัญมาก! รวมขอบในการคำนวณ */
+    html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; background-color: var(--bg-body); }
     
     /* Wrapper หลัก */
     .single-view-wrapper {
-        height: calc(100vh - 80px); /* ลบความสูง Header */
+        /* ความสูงจอ - (Header 80px + Padding บนล่าง 40px) = พื้นที่ที่เหลือ */
+        height: calc(100vh - 80px); 
+        width: 100%;
         max-width: 1600px;
         margin: 0 auto;
-        padding: 15px 25px 25px 25px;
+        padding: 15px 25px 25px 25px; /* Padding นี้รวมอยู่ใน height แล้วเพราะ box-sizing */
         display: flex;
         flex-direction: column;
         gap: 15px;
@@ -54,7 +56,8 @@ include 'includes/header.php';
     /* 1. Header Bar */
     .view-header {
         display: flex; justify-content: space-between; align-items: center;
-        flex-shrink: 0; padding: 15px 25px;
+        flex-shrink: 0; /* ห้ามหด */
+        padding: 15px 25px;
         background: #fff;
         border-radius: 16px;
         box-shadow: var(--shadow);
@@ -66,11 +69,11 @@ include 'includes/header.php';
     /* 2. Main Grid Layout */
     .view-grid {
         display: grid;
-        grid-template-columns: 400px 1fr; /* ซ้าย 400px, ขวายืดเต็ม */
+        grid-template-columns: 380px 1fr; /* ซ้าย 380px คงที่, ขวายืด */
         gap: 20px;
         flex-grow: 1;    /* ยืดเต็มความสูงที่เหลือ */
-        min-height: 0;   /* ป้องกัน Grid ล้น */
-        overflow: hidden;
+        min-height: 0;   /* ป้องกัน Grid ดันจนล้น */
+        overflow: hidden; /* ห้าม Grid หลักเลื่อน */
     }
 
     /* --- คอลัมน์ซ้าย (ข้อมูล) --- */
@@ -80,14 +83,21 @@ include 'includes/header.php';
         border: 1px solid var(--border);
         box-shadow: var(--shadow);
         padding: 20px;
-        overflow-y: auto; /* เลื่อนได้ถ้าข้อมูลเยอะ */
-        display: flex; flex-direction: column; gap: 25px;
+        overflow-y: auto; /* เลื่อนได้เฉพาะในกล่องนี้ */
+        display: flex; flex-direction: column; gap: 20px;
+        height: 100%; /* เต็มความสูง Grid */
     }
+    
+    /* ปรับแต่ง Scrollbar ให้สวยงาม (Chrome/Safari) */
+    .col-sidebar::-webkit-scrollbar, .workspace-content::-webkit-scrollbar { width: 6px; }
+    .col-sidebar::-webkit-scrollbar-thumb, .workspace-content::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    .col-sidebar::-webkit-scrollbar-track, .workspace-content::-webkit-scrollbar-track { background: transparent; }
+
     .sidebar-group-title {
         font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;
-        margin-bottom: 15px; border-bottom: 2px solid var(--bg-body); padding-bottom: 5px;
+        margin-bottom: 12px; border-bottom: 2px solid var(--bg-body); padding-bottom: 5px;
     }
-    .info-item { margin-bottom: 12px; display: flex; justify-content: space-between; align-items: baseline; font-size: 0.95rem; }
+    .info-item { margin-bottom: 10px; display: flex; justify-content: space-between; align-items: baseline; font-size: 0.95rem; }
     .info-label { color: var(--text-muted); font-size: 0.85rem; }
     .info-value { font-weight: 600; color: var(--text-main); text-align: right; }
 
@@ -95,18 +105,18 @@ include 'includes/header.php';
     .col-workspace {
         display: flex;
         flex-direction: column;
-        gap: 20px;
+        gap: 15px;
         height: 100%;
         overflow: hidden;
     }
 
-    /* ส่วนบน: อาการ + รูปภาพ */
+    /* ส่วนบน: อาการ + รูปภาพ (ยืดหยุ่น) */
     .workspace-content {
         flex: 1; /* กินพื้นที่ที่เหลือทั้งหมด */
         min-height: 0; /* ยอมให้หดได้ */
         overflow-y: auto; /* เลื่อนได้ */
-        display: flex; flex-direction: column; gap: 20px;
-        padding-right: 5px;
+        display: flex; flex-direction: column; gap: 15px;
+        padding-right: 5px; /* เผื่อที่ Scrollbar */
     }
 
     /* กล่องอาการเสีย */
@@ -117,16 +127,17 @@ include 'includes/header.php';
 
     /* กล่องรูปภาพ */
     .image-card {
-        background: #27272a; /* พื้นหลังสีเข้ม */
+        background: #27272a;
         border-radius: 16px;
         display: flex; align-items: center; justify-content: center;
         overflow: hidden;
         position: relative;
-        min-height: 250px; /* ความสูงขั้นต่ำ */
+        min-height: 200px; /* ความสูงขั้นต่ำ */
         box-shadow: var(--shadow);
+        flex-shrink: 0; /* ห้ามหดจนหาย */
     }
     .image-card img {
-        max-width: 100%; max-height: 400px; /* จำกัดความสูงรูปไม่ให้กินที่เกินไป */
+        max-width: 100%; max-height: 350px; /* จำกัดความสูงรูป */
         object-fit: contain; cursor: zoom-in;
         transition: transform 0.3s;
     }
@@ -137,7 +148,7 @@ include 'includes/header.php';
         flex-shrink: 0; /* ห้ามหด */
         background: #fff;
         border-radius: 16px;
-        padding: 20px;
+        padding: 15px 20px;
         border: 2px solid var(--primary);
         box-shadow: 0 -5px 20px rgba(0,0,0,0.05);
         z-index: 10;
@@ -213,7 +224,6 @@ include 'includes/header.php';
                 <div class="sidebar-group-title">💻 ข้อมูลอุปกรณ์</div>
                 <div class="info-item"><span class="info-label">ทะเบียน</span><span class="info-value"><?php echo htmlspecialchars($asset_show); ?></span></div>
                 <div class="info-item"><span class="info-label">ชนิด</span><span class="info-value"><?php echo htmlspecialchars($type_show); ?></span></div>
-                <div class="info-item"><span class="info-label">ที่ตั้ง</span><span class="info-value"><?php echo htmlspecialchars($request['location_group'] ?: '-'); ?></span></div>
             </div>
 
             <?php if ($request['action_taken']): ?>

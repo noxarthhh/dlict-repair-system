@@ -15,6 +15,10 @@ $options = [
 try {
      $pdo = new PDO($dsn, $user, $pass, $options);
 } catch (\PDOException $e) {
-     die("<h3>❌ เชื่อมต่อฐานข้อมูลไม่ได้</h3><br>" . $e->getMessage());
+     // Log the real error to a file and show a generic message to users
+     $logFile = __DIR__ . '/logs/db_connect_error.log';
+     error_log(date('[Y-m-d H:i:s] ') . $e->getMessage() . PHP_EOL, 3, $logFile);
+     http_response_code(500);
+     die("<h3>❌ เชื่อมต่อฐานข้อมูลไม่ได้ โปรดติดต่อผู้ดูแลระบบ</h3>");
 }
 ?>
