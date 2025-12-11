@@ -2,44 +2,43 @@
 session_start();
 include 'db_connect.php';
 
-// 1. ⛔ Access Control
+// Access Control
 if (!isset($_SESSION['logged_in']) || $_SESSION['user_role'] !== 'admin') {
-    header("Location: dashboard_tech.php");
+    header("Location: home.php");
     exit();
 }
 
 $page_title = 'เพิ่มผู้ใช้งานใหม่';
-$message = '';
-$msg_type = '';
+$error = '';
+$success = '';
 
-// 2. Handle Form Submit
+// Process Form Submission (Same as your previous logic)
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $username = trim($_POST['username']);
-    $password = trim($_POST['password']);
-    $full_name = trim($_POST['full_name']);
-    $group_name = trim($_POST['group_name']);
-    $position = trim($_POST['position']);
-    $role = $_POST['role'];
+    $username = trim($_POST['username'] ?? '');
+    $password = $_POST['password'] ?? '';
+    $full_name = trim($_POST['full_name'] ?? '');
+    $group_name = trim($_POST['group_name'] ?? '');
+    $position = trim($_POST['position'] ?? '');
+    $role = $_POST['role'] ?? 'requester';
 
     if (empty($username) || empty($password) || empty($full_name)) {
-        $message = "กรุณากรอกข้อมูลที่จำเป็น (*) ให้ครบถ้วน"; $msg_type = 'danger';
+        $error = "กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน";
+    } elseif (strlen($password) < 6) {
+        $error = "รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร";
     } else {
         try {
-            // เช็ค Username ซ้ำ
-            $stmt_check = $pdo->prepare("SELECT COUNT(*) FROM staffs WHERE username = ?");
-            $stmt_check->execute([$username]);
-            if ($stmt_check->fetchColumn() > 0) {
-                $message = "Username นี้มีผู้ใช้งานแล้ว"; $msg_type = 'warning';
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM staffs WHERE username = ?");
+            $stmt->execute([$username]);
+            if ($stmt->fetchColumn() > 0) {
+                $error = "Username นี้ถูกใช้งานแล้ว";
             } else {
-                // บันทึก
-                $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-                $sql = "INSERT INTO staffs (username, password, full_name, group_name, position, role) VALUES (?, ?, ?, ?, ?, ?)";
-                $stmt = $pdo->prepare($sql);
-                $stmt->execute([$username, $hashed_password, $full_name, $group_name, $position, $role]);
-                $message = "เพิ่มผู้ใช้งานสำเร็จ!"; $msg_type = 'success';
+                $password_hash = password_hash($password, PASSWORD_DEFAULT);
+                $stmt = $pdo->prepare("INSERT INTO staffs (username, password_hash, full_name, group_name, position, role) VALUES (?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$username, $password_hash, $full_name, $group_name, $position, $role]);
+                $success = "เพิ่มผู้ใช้งานใหม่เรียบร้อย: " . htmlspecialchars($full_name);
             }
         } catch (PDOException $e) {
-            $message = "เกิดข้อผิดพลาด: " . $e->getMessage(); $msg_type = 'danger';
+            $error = "เกิดข้อผิดพลาดในการบันทึกข้อมูล: " . $e->getMessage();
         }
     }
 }
@@ -47,148 +46,156 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 include 'includes/header.php';
 ?>
 
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <style>
-    /* Layout & Background */
-    body { overflow: hidden; background-color: #f0f4f8; }
-    .form-wrapper {
+    /* Global No Scroll */
+    body { overflow: hidden; background: linear-gradient(-45deg, #eef2ff, #f0fdf4, #fff7ed, #fdf4ff); background-size: 400% 400%; animation: gradientBG 15s ease infinite; }
+    
+    .add-user-wrapper {
         height: calc(100vh - 80px);
-        display: flex; justify-content: center; align-items: center;
-        padding: 20px;
-        position: relative; overflow: hidden;
+        display: flex; justify-content: center; align-items: center; padding: 20px;
+        animation: zoomIn 0.6s;
     }
-    /* Background Decoration */
-    .bg-deco { position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.15; z-index: -1; }
-    .d1 { top: -10%; left: -10%; width: 40%; height: 40%; background: var(--primary); animation: float 10s infinite; }
-    .d2 { bottom: -10%; right: -10%; width: 50%; height: 50%; background: var(--info); animation: float 15s infinite reverse; }
-    @keyframes float { 0%,100% { transform: translate(0,0); } 50% { transform: translate(30px, 50px); } }
 
     /* Premium Form Card */
-    .premium-card {
-        width: 100%; max-width: 900px;
-        background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(20px);
-        border-radius: 24px;
+    .form-card-wide {
+        width: 100%; max-width: 1000px; height: auto;
+        background: rgba(255,255,255,0.9); backdrop-filter: blur(15px);
+        border-radius: 20px; border: 1px solid rgba(255,255,255,0.7);
+        box-shadow: 0 15px 40px rgba(0,0,0,0.1);
         padding: 40px;
-        box-shadow: 0 20px 50px -10px rgba(0,0,0,0.15);
-        border: 1px solid rgba(255,255,255,0.5);
-        animation: slideUp 0.6s ease-out;
     }
-    @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-
-    .form-title { text-align: center; margin-bottom: 35px; }
-    .form-title h1 { margin: 0; font-size: 2rem; font-weight: 800; color: var(--text-main); }
-    .form-title p { color: var(--text-muted); margin-top: 5px; }
-
-    /* Form Grid */
-    .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
-    .section-head { font-weight: 700; color: var(--primary); margin-bottom: 15px; display: flex; align-items: center; gap: 8px; font-size: 1.1rem; }
     
-    /* Input Styling */
-    .form-group label { font-weight: 600; margin-bottom: 8px; color: var(--text-main); display: block; }
-    .input-group { position: relative; }
-    .input-icon { position: absolute; top: 50%; left: 15px; transform: translateY(-50%); color: var(--text-muted); z-index: 1; }
-    .form-control-pl { padding-left: 45px !important; transition: 0.3s; border: 2px solid var(--border); background: #f8fafc; }
-    .form-control-pl:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
-
-    /* Button */
-    .btn-premium {
-        width: 100%; padding: 15px;
-        background: linear-gradient(135deg, var(--primary), var(--info));
-        color: white; font-weight: 700; font-size: 1.1rem;
-        border-radius: 50px; border: none; cursor: pointer;
-        transition: 0.3s; box-shadow: 0 10px 20px -5px rgba(59, 130, 246, 0.4);
+    .form-title { text-align: center; margin-bottom: 30px; }
+    .form-title h1 { 
+        font-size: 2rem; font-weight: 800; margin: 0;
+        color: var(--primary); display: flex; align-items: center; justify-content: center; gap: 10px;
     }
-    .btn-premium:hover { transform: translateY(-3px); box-shadow: 0 15px 30px -5px rgba(59, 130, 246, 0.5); filter: brightness(1.1); }
+    .form-title p { color: #64748b; margin-top: 5px; }
 
-    @media (max-width: 768px) { .form-grid-2 { grid-template-columns: 1fr; gap: 15px; } .premium-card { padding: 25px; } }
+    /* Layout Grid */
+    .form-grid {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 40px;
+    }
+    
+    .section-head { 
+        font-weight: 700; color: #4f46e5; margin-bottom: 20px;
+        border-bottom: 1px dashed #e2e8f0; padding-bottom: 10px;
+        display: flex; align-items: center; gap: 8px;
+    }
+
+    /* Input Styling (Same as New Request) */
+    .input-grp { margin-bottom: 20px; }
+    .input-grp label { font-weight: 700; color: #475569; margin-bottom: 5px; display: block; font-size: 0.9rem; }
+    .input-wrapper { position: relative; }
+    .input-wrapper i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #94a3b8; transition: 0.3s; }
+    .form-control {
+        width: 100%; padding: 12px 12px 12px 40px; border: 2px solid #e2e8f0; border-radius: 10px;
+        background: #f8fafc; transition: 0.3s; font-size: 0.95rem;
+    }
+    .form-control:focus { border-color: #4f46e5; box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1); outline: none; }
+    
+    .btn-submit {
+        width: 100%; padding: 14px; background: linear-gradient(135deg, #4f46e5, #3b82f6);
+        color: white; border: none; border-radius: 50px; font-weight: 700; font-size: 1.1rem;
+        box-shadow: 0 10px 20px rgba(79, 70, 229, 0.3); transition: 0.3s;
+    }
+    .btn-submit:hover { transform: translateY(-3px); }
+
+    @media (max-width: 900px) {
+        body { overflow: auto; }
+        .add-user-wrapper { height: auto; display: block; padding-top: 30px; }
+        .form-card-wide { padding: 25px; }
+        .form-grid { grid-template-columns: 1fr; gap: 20px; }
+    }
 </style>
 
-<div class="form-wrapper">
-    <div class="bg-deco d1"></div>
-    <div class="bg-deco d2"></div>
-
-    <div class="premium-card">
+<div class="add-user-wrapper">
+    <div class="form-card-wide">
+        
         <div class="form-title">
-            <h1><i class="fa-solid fa-user-plus" style="color:var(--primary);"></i> เพิ่มผู้ใช้งานใหม่</h1>
-            <p>สร้างบัญชีสำหรับเจ้าหน้าที่หรือช่างเทคนิค</p>
+            <h1><i class="fa-solid fa-user-plus"></i> เพิ่มผู้ใช้งานใหม่</h1>
+            <p>สร้างบัญชีสำหรับเจ้าหน้าที่หรือผู้แจ้งซ่อม</p>
         </div>
 
-        <?php if ($message): ?>
-            <script>
-                Swal.fire({
-                    icon: '<?php echo $msg_type == "danger" ? "error" : $msg_type; ?>',
-                    title: '<?php echo $msg_type == "success" ? "สำเร็จ!" : "แจ้งเตือน"; ?>',
-                    text: '<?php echo $message; ?>',
-                    confirmButtonText: 'ตกลง',
-                    customClass: { popup: 'swal-custom-font' }
-                });
-            </script>
-        <?php endif; ?>
-
         <form method="POST" action="admin_add_user.php">
-            <div class="form-grid-2">
+            <div class="form-grid">
+                
                 <div>
-                    <div class="section-head"><i class="fa-solid fa-shield-halved"></i> ข้อมูลเข้าระบบ</div>
-                    <div class="form-group">
-                        <label>Username *</label>
-                        <div class="input-group">
-                            <i class="fa-solid fa-user input-icon"></i>
-                            <input type="text" name="username" class="form-control-pl" required placeholder="ระบุชื่อผู้ใช้">
+                    <div class="section-head"><i class="fa-solid fa-lock"></i> ข้อมูลเข้าสู่ระบบ (Login)</div>
+                    <div class="input-grp">
+                        <label for="username">Username / Email *</label>
+                        <div class="input-wrapper">
+                            <input type="text" name="username" id="username" class="form-control" required placeholder="ตั้งชื่อผู้ใช้/อีเมล">
+                            <i class="fa-solid fa-at"></i>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label>Password *</label>
-                        <div class="input-group">
-                            <i class="fa-solid fa-lock input-icon"></i>
-                            <input type="password" name="password" class="form-control-pl" required placeholder="ระบุรหัสผ่าน">
+                    <div class="input-grp">
+                        <label for="password">Password *</label>
+                        <div class="input-wrapper">
+                            <input type="password" name="password" id="password" class="form-control" required placeholder="ตั้งรหัสผ่านเริ่มต้น (อย่างน้อย 6 ตัวอักษร)">
+                            <i class="fa-solid fa-key"></i>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label>สิทธิ์การใช้งาน *</label>
-                        <div class="input-group">
-                            <i class="fa-solid fa-user-tag input-icon" style="z-index:1;"></i>
-                            <select name="role" class="form-control-pl" style="-webkit-appearance: none;">
-                                <option value="requester">ผู้แจ้งซ่อม (Requester)</option>
-                                <option value="technician">ช่างเทคนิค (Technician)</option>
-                                <option value="admin">ผู้ดูแลระบบ (Admin)</option>
+                    <div class="input-grp">
+                        <label for="role">สิทธิ์การใช้งาน *</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-user-tag"></i>
+                            <select name="role" id="role" class="form-control" style="cursor:pointer;">
+                                <option value="requester">Requester (ผู้แจ้งซ่อมทั่วไป)</option>
+                                <option value="technician">Technician (ช่างซ่อม)</option>
+                                <option value="admin">Admin (ผู้ดูแลระบบ)</option>
                             </select>
-                            <i class="fa-solid fa-chevron-down" style="position:absolute; right:15px; top:50%; transform:translateY(-50%); color:var(--text-muted);"></i>
                         </div>
                     </div>
                 </div>
-                
-                <div style="border-left: 1px dashed var(--border); padding-left: 25px;">
-                    <div class="section-head"><i class="fa-solid fa-id-card"></i> ข้อมูลทั่วไป</div>
-                    <div class="form-group">
-                        <label>ชื่อ-นามสกุล *</label>
-                        <div class="input-group">
-                            <i class="fa-solid fa-signature input-icon"></i>
-                            <input type="text" name="full_name" class="form-control-pl" required placeholder="เช่น นายใจดี มีสุข">
+
+                <div>
+                    <div class="section-head"><i class="fa-solid fa-id-card"></i> ข้อมูลส่วนตัว (Personal)</div>
+                    <div class="input-grp">
+                        <label for="full_name">ชื่อ-นามสกุล *</label>
+                        <div class="input-wrapper">
+                            <input type="text" name="full_name" id="full_name" class="form-control" required placeholder="เช่น นายสมชาย ใจดี">
+                            <i class="fa-solid fa-signature"></i>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label>กลุ่ม/ฝ่ายงาน</label>
-                        <div class="input-group">
-                            <i class="fa-solid fa-building input-icon"></i>
-                            <input type="text" name="group_name" class="form-control-pl" placeholder="เช่น ฝ่ายเทคโนโลยีสารสนเทศ">
+                    <div class="input-grp">
+                        <label for="group_name">กลุ่ม/ฝ่ายงาน</label>
+                        <div class="input-wrapper">
+                            <input type="text" name="group_name" id="group_name" class="form-control" placeholder="เช่น ฝ่ายบริหารงานบุคคล">
+                            <i class="fa-solid fa-building"></i>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label>ตำแหน่ง</label>
-                        <div class="input-group">
-                            <i class="fa-solid fa-briefcase input-icon"></i>
-                            <input type="text" name="position" class="form-control-pl" placeholder="เช่น นักวิชาการคอมพิวเตอร์">
+                    <div class="input-grp">
+                        <label for="position">ตำแหน่ง</label>
+                        <div class="input-wrapper">
+                            <input type="text" name="position" id="position" class="form-control" placeholder="เช่น นักวิชาการคอมพิวเตอร์">
+                            <i class="fa-solid fa-briefcase"></i>
                         </div>
                     </div>
                 </div>
             </div>
-
-            <div style="margin-top: 35px;">
-                <button type="submit" class="btn-premium">
-                    <i class="fa-solid fa-check-circle"></i> บันทึกข้อมูล
+            
+            <div style="margin-top: 30px; text-align: center;">
+                <button type="submit" class="btn-submit animate__animated animate__pulse" data-wow-iteration="infinite">
+                    <i class="fa-solid fa-save"></i> บันทึกข้อมูลผู้ใช้
                 </button>
             </div>
         </form>
     </div>
 </div>
-<?php include 'includes/footer.php'; ?>
+
+<script>
+    // SweetAlert สำหรับแจ้งเตือนผลลัพธ์
+    <?php if ($success): ?>
+        Swal.fire({ icon: 'success', title: 'สำเร็จ!', text: '<?php echo htmlspecialchars($success); ?>', confirmButtonColor: '#10b981', customClass: { popup: 'swal-custom-font' } });
+    <?php elseif ($error): ?>
+        Swal.fire({ icon: 'error', title: 'ผิดพลาด!', text: '<?php echo htmlspecialchars($error); ?>', confirmButtonColor: '#ef4444', customClass: { popup: 'swal-custom-font' } });
+    <?php endif; ?>
+</script>
+
+<?php 
+// include 'includes/footer.php'; 
+?>
