@@ -8,10 +8,19 @@ $page_title = 'แจ้งซ่อมใหม่';
 $staff_id = $_SESSION['staff_id'];
 $full_name = $_SESSION['full_name'];
 
-// ดึงข้อมูลผู้แจ้งเพิ่มเติม
+// 1. ดึงข้อมูลผู้แจ้งเพิ่มเติม
 $stmt = $pdo->prepare("SELECT group_name, position FROM staffs WHERE staff_id = ?");
 $stmt->execute([$staff_id]);
 $user_info = $stmt->fetch();
+
+// 2. ✅ ดึงประเภทงานซ่อมจาก Database (ที่ Admin เพิ่มไว้)
+// ใช้ try-catch เผื่อกรณียังไม่มีตาราง จะได้ไม่ error
+$types = [];
+try {
+    $types = $pdo->query("SELECT * FROM repair_types ORDER BY type_name ASC")->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) {
+    // ถ้ายังไม่มีตาราง repair_types ก็ปล่อย array เป็นค่าว่าง
+}
 
 include 'includes/header.php'; 
 ?>
@@ -163,11 +172,33 @@ include 'includes/header.php';
                         <i class="fa-solid fa-laptop"></i>
                         <select name="problem_type" class="form-control" required style="cursor:pointer;">
                             <option value="">-- กรุณาเลือก --</option>
+                            
                             <option value="เครื่องคอมพิวเตอร์">คอมพิวเตอร์ (PC)</option>
                             <option value="โน้ตบุ๊ก">โน้ตบุ๊ก (Notebook)</option>
                             <option value="เครื่องพิมพ์">เครื่องพิมพ์ (Printer)</option>
                             <option value="อินเทอร์เน็ต">อินเทอร์เน็ต/Network</option>
                             <option value="โปรแกรม">โปรแกรม/Software</option>
+
+                            <?php if(count($types) > 0): ?>
+                                <option value="" disabled>──────────────</option> <?php endif; ?>
+
+                            <?php 
+                                // รายชื่อมาตรฐานที่มีอยู่แล้ว (เพื่อเช็คไม่ให้แสดงซ้ำ)
+                                $standard_items = ['เครื่องคอมพิวเตอร์', 'โน้ตบุ๊ก', 'เครื่องพิมพ์', 'อินเทอร์เน็ต', 'โปรแกรม', 'อื่นๆ'];
+                                
+                                foreach ($types as $t): 
+                                    // ถ้าชื่อที่ Admin เพิ่ม ไม่ตรงกับของเดิม ค่อยแสดงออกมา
+                                    if (!in_array($t['type_name'], $standard_items)): 
+                            ?>
+                                    <option value="<?php echo htmlspecialchars($t['type_name']); ?>">
+                                        <?php echo htmlspecialchars($t['type_name']); ?>
+                                    </option>
+                            <?php 
+                                    endif; 
+                                endforeach; 
+                            ?>
+
+                            <option value="" disabled>──────────────</option>
                             <option value="อื่นๆ">อื่นๆ</option>
                         </select>
                     </div>
