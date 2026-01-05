@@ -1,5 +1,5 @@
 <?php
-// register.php - Compact Design & Confirm Password
+// register.php - Compact Design & Confirm Password & Title Dropdown
 session_start();
 include 'db_connect.php';
 
@@ -11,12 +11,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $password         = $_POST['password'] ?? '';
     $confirm_password = $_POST['confirm_password'] ?? '';
     $email            = trim($_POST['email'] ?? '');
-    $full_name        = trim($_POST['full_name'] ?? '');
+    
+    // รับค่าคำนำหน้าและชื่อ
+    $title            = $_POST['title'] ?? '';
+    $full_name_input  = trim($_POST['full_name'] ?? '');
+    
+    // รวมคำนำหน้ากับชื่อ (ถ้าเลือก)
+    $full_name = ($title && $full_name_input) ? "$title$full_name_input" : $full_name_input;
+
     $group_name       = $_POST['group_name'] ?? '';
     $position         = $_POST['position'] ?? '';
     $role             = 'requester'; 
 
-    if (empty($username) || empty($password) || empty($confirm_password) || empty($full_name) || empty($email)) {
+    if (empty($username) || empty($password) || empty($confirm_password) || empty($full_name_input) || empty($email) || empty($title)) {
         $error_message = "กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน";
     } elseif ($password !== $confirm_password) {
         $error_message = "รหัสผ่านไม่ตรงกัน";
@@ -84,13 +91,19 @@ include 'includes/header.php';
     
     .input-group-custom { margin-bottom: 12px; }
     .input-group-custom label { display: block; font-weight: 600; color: #475569; margin-bottom: 4px; font-size: 0.85rem; }
-    .input-group-custom input {
-        width: 100%; padding: 8px 12px; border-radius: 8px; /* ลด padding input */
+    
+    /* Input & Select Style */
+    .input-group-custom input, .input-group-custom select {
+        width: 100%; padding: 8px 12px; border-radius: 8px; 
         border: 1px solid #e2e8f0; background: #f8fafc; font-size: 0.95rem; color: #334155;
+        height: 40px; /* Fix height for alignment */
     }
-    .input-group-custom input:focus { border-color: #3b82f6; background: #fff; outline: none; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+    .input-group-custom input:focus, .input-group-custom select:focus { border-color: #3b82f6; background: #fff; outline: none; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
     
     .row-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+    
+    /* Special Grid for Name (Title + Name) */
+    .name-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 15px; }
 
     .btn-submit {
         width: 100%; padding: 10px; margin-top: 15px;
@@ -144,7 +157,7 @@ include 'includes/header.php';
                     <input type="text" name="username" required placeholder="User01" value="<?php echo htmlspecialchars($username ?? ''); ?>">
                 </div>
                 <div class="input-group-custom">
-                    <label>อีเมล (สำหรับกู้คืนรหัสผ่าน) <span class="text-danger">*</span></label>
+                    <label>อีเมล <span class="text-danger">*</span></label>
                     <input type="email" name="email" required placeholder="email@example.com" value="<?php echo htmlspecialchars($email ?? ''); ?>">
                 </div>
             </div>
@@ -162,9 +175,20 @@ include 'includes/header.php';
 
             <div class="form-section-title">ข้อมูลส่วนตัว</div>
 
-            <div class="input-group-custom">
-                <label>ชื่อ-นามสกุล (ภาษาไทย) <span class="text-danger">*</span></label>
-                <input type="text" name="full_name" required placeholder="นายสมชาย ใจดี" value="<?php echo htmlspecialchars($full_name ?? ''); ?>">
+            <div class="name-grid">
+                <div class="input-group-custom">
+                    <label>คำนำหน้า <span class="text-danger">*</span></label>
+                    <select name="title" required>
+                        <option value="" disabled selected>เลือก</option>
+                        <option value="นาย" <?php echo (isset($_POST['title']) && $_POST['title']=='นาย')?'selected':''; ?>>นาย</option>
+                        <option value="นาง" <?php echo (isset($_POST['title']) && $_POST['title']=='นาง')?'selected':''; ?>>นาง</option>
+                        <option value="นางสาว" <?php echo (isset($_POST['title']) && $_POST['title']=='นางสาว')?'selected':''; ?>>นางสาว</option>
+                    </select>
+                </div>
+                <div class="input-group-custom">
+                    <label>ชื่อ-นามสกุล (ภาษาไทย) <span class="text-danger">*</span></label>
+                    <input type="text" name="full_name" required placeholder="สมชาย ใจดี" value="<?php echo htmlspecialchars($full_name_input ?? ''); ?>">
+                </div>
             </div>
 
             <div class="row-grid">

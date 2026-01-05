@@ -7,7 +7,7 @@ $lang_code = $_COOKIE['app_lang'] ?? 'th';
 
 // ภาษา (Dictionary)
 $lang = [
-    'th' => [ 'title' => 'ระบบแจ้งซ่อม DLICT', 'home' => 'หน้าหลัก', 'dashboard' => 'รายการแจ้งซ่อม', 'report' => 'แดชบอร์ด', 'add_user' => 'เพิ่มผู้ใช้', 'new_request' => 'แจ้งซ่อม', 'tracking' => 'ติดตามงาน', 'login' => 'เข้าสู่ระบบ', 'logout' => 'ออกจากระบบ' ],
+    'th' => [ 'title' => 'ระบบแจ้งซ่อม DLICT', 'home' => 'หน้าหลัก', 'dashboard' => 'รายการแจ้งซ่อม', 'report' => 'แดชบอร์ด', 'add_user' => 'จัดการผู้ใช้', 'new_request' => 'แจ้งซ่อม', 'tracking' => 'ติดตามงาน', 'login' => 'เข้าสู่ระบบ', 'logout' => 'ออกจากระบบ' ],
     'en' => [ 'title' => 'DLICT Repair System', 'home' => 'Home', 'dashboard' => 'Dashboard', 'report' => 'Report', 'add_user' => 'Add User', 'new_request' => 'New Request', 'tracking' => 'Tracking', 'login' => 'Login', 'logout' => 'Logout' ]
 ];
 $L = $lang[$lang_code];

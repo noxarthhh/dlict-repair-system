@@ -1,4 +1,5 @@
 <?php
+// admin_add_user.php - เพิ่ม/ลบ ผู้ใช้งาน (Admin Only)
 session_start();
 include 'db_connect.php';
 
@@ -8,14 +9,35 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['user_role'] !== 'admin') {
     exit();
 }
 
-$page_title = 'เพิ่มผู้ใช้งานใหม่';
+$page_title = 'จัดการผู้ใช้งาน';
 $error = '';
 $success = '';
 
-// Process Form Submission (Same as your previous logic)
+// --- 1. จัดการลบผู้ใช้ (Delete Action) ---
+if (isset($_GET['delete_id'])) {
+    $del_id = $_GET['delete_id'];
+    // ป้องกันไม่ให้ลบตัวเอง
+    if ($del_id == $_SESSION['staff_id']) {
+        $error = "คุณไม่สามารถลบบัญชีของตัวเองได้";
+    } else {
+        try {
+            $stmt = $pdo->prepare("DELETE FROM staffs WHERE staff_id = ?");
+            if ($stmt->execute([$del_id])) {
+                $success = "ลบผู้ใช้งานเรียบร้อยแล้ว";
+                // Redirect เพื่อเคลียร์ Query String
+                echo "<script>setTimeout(() => { window.location='admin_add_user.php'; }, 1500);</script>";
+            }
+        } catch (PDOException $e) {
+            $error = "เกิดข้อผิดพลาดในการลบ: " . $e->getMessage();
+        }
+    }
+}
+
+// --- 2. จัดการเพิ่มผู้ใช้ (Add Action) ---
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
+    $email    = trim($_POST['email'] ?? '');
     $full_name = trim($_POST['full_name'] ?? '');
     $group_name = trim($_POST['group_name'] ?? '');
     $position = trim($_POST['position'] ?? '');
@@ -27,21 +49,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $error = "รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร";
     } else {
         try {
-            $stmt = $pdo->prepare("SELECT COUNT(*) FROM staffs WHERE username = ?");
-            $stmt->execute([$username]);
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM staffs WHERE username = ? OR email = ?");
+            $stmt->execute([$username, $email]);
             if ($stmt->fetchColumn() > 0) {
-                $error = "Username นี้ถูกใช้งานแล้ว";
+                $error = "Username หรือ Email นี้ถูกใช้งานแล้ว";
             } else {
                 $password_hash = password_hash($password, PASSWORD_DEFAULT);
-                $stmt = $pdo->prepare("INSERT INTO staffs (username, password_hash, full_name, group_name, position, role) VALUES (?, ?, ?, ?, ?, ?)");
-                $stmt->execute([$username, $password_hash, $full_name, $group_name, $position, $role]);
+                $stmt = $pdo->prepare("INSERT INTO staffs (username, password_hash, full_name, email, group_name, position, role) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$username, $password_hash, $full_name, $email, $group_name, $position, $role]);
                 $success = "เพิ่มผู้ใช้งานใหม่เรียบร้อย: " . htmlspecialchars($full_name);
             }
         } catch (PDOException $e) {
-            $error = "เกิดข้อผิดพลาดในการบันทึกข้อมูล: " . $e->getMessage();
+            $error = "เกิดข้อผิดพลาด: " . $e->getMessage();
         }
     }
 }
+
+// ดึงรายชื่อผู้ใช้ทั้งหมด (สำหรับแสดงในตาราง)
+$stmt = $pdo->query("SELECT * FROM staffs ORDER BY staff_id DESC");
+$users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 include 'includes/header.php';
 ?>
@@ -50,149 +76,172 @@ include 'includes/header.php';
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
-    /* Global No Scroll */
-    body { overflow: hidden; background: linear-gradient(-45deg, #eef2ff, #f0fdf4, #fff7ed, #fdf4ff); background-size: 400% 400%; animation: gradientBG 15s ease infinite; }
+    body { overflow: hidden; background-color: #f1f5f9; font-family: 'Sarabun', sans-serif; }
     
-    .add-user-wrapper {
+    .admin-wrapper {
         height: calc(100vh - 80px);
-        display: flex; justify-content: center; align-items: center; padding: 20px;
-        animation: zoomIn 0.6s;
+        display: flex; gap: 20px; padding: 20px;
     }
 
-    /* Premium Form Card */
-    .form-card-wide {
-        width: 100%; max-width: 1000px; height: auto;
-        background: rgba(255,255,255,0.9); backdrop-filter: blur(15px);
-        border-radius: 20px; border: 1px solid rgba(255,255,255,0.7);
-        box-shadow: 0 15px 40px rgba(0,0,0,0.1);
-        padding: 40px;
+    /* Left Panel: Form */
+    .form-panel {
+        flex: 1; background: white; border-radius: 20px; padding: 30px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05); overflow-y: auto;
     }
     
-    .form-title { text-align: center; margin-bottom: 30px; }
-    .form-title h1 { 
-        font-size: 2rem; font-weight: 800; margin: 0;
-        color: var(--primary); display: flex; align-items: center; justify-content: center; gap: 10px;
-    }
-    .form-title p { color: #64748b; margin-top: 5px; }
-
-    /* Layout Grid */
-    .form-grid {
-        display: grid; grid-template-columns: 1fr 1fr; gap: 40px;
-    }
-    
-    .section-head { 
-        font-weight: 700; color: #4f46e5; margin-bottom: 20px;
-        border-bottom: 1px dashed #e2e8f0; padding-bottom: 10px;
-        display: flex; align-items: center; gap: 8px;
+    /* Right Panel: Table List */
+    .list-panel {
+        flex: 1.5; background: white; border-radius: 20px; padding: 25px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05); display: flex; flex-direction: column;
     }
 
-    /* Input Styling (Same as New Request) */
-    .input-grp { margin-bottom: 20px; }
-    .input-grp label { font-weight: 700; color: #475569; margin-bottom: 5px; display: block; font-size: 0.9rem; }
-    .input-wrapper { position: relative; }
-    .input-wrapper i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #94a3b8; transition: 0.3s; }
+    /* Input Styles */
+    .input-grp { margin-bottom: 15px; }
+    .input-grp label { font-weight: 600; font-size: 0.9rem; color: #475569; margin-bottom: 5px; display: block; }
     .form-control {
-        width: 100%; padding: 12px 12px 12px 40px; border: 2px solid #e2e8f0; border-radius: 10px;
-        background: #f8fafc; transition: 0.3s; font-size: 0.95rem;
+        width: 100%; padding: 10px 15px; border: 1px solid #cbd5e1; border-radius: 10px;
+        transition: 0.3s; font-size: 0.95rem;
     }
-    .form-control:focus { border-color: #4f46e5; box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1); outline: none; }
-    
-    .btn-submit {
-        width: 100%; padding: 14px; background: linear-gradient(135deg, #4f46e5, #3b82f6);
-        color: white; border: none; border-radius: 50px; font-weight: 700; font-size: 1.1rem;
-        box-shadow: 0 10px 20px rgba(79, 70, 229, 0.3); transition: 0.3s;
-    }
-    .btn-submit:hover { transform: translateY(-3px); }
+    .form-control:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); outline: none; }
 
-    @media (max-width: 900px) {
-        body { overflow: auto; }
-        .add-user-wrapper { height: auto; display: block; padding-top: 30px; }
-        .form-card-wide { padding: 25px; }
-        .form-grid { grid-template-columns: 1fr; gap: 20px; }
+    .btn-save {
+        width: 100%; padding: 12px; background: linear-gradient(135deg, #3b82f6, #2563eb);
+        color: white; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; transition: 0.3s;
+    }
+    .btn-save:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(37, 99, 235, 0.3); }
+
+    /* Table Styles */
+    .table-container { flex: 1; overflow-y: auto; margin-top: 15px; border-radius: 10px; border: 1px solid #e2e8f0; }
+    table { width: 100%; border-collapse: collapse; }
+    th { position: sticky; top: 0; background: #f8fafc; padding: 15px; text-align: left; color: #475569; font-weight: 700; z-index: 1; }
+    td { padding: 15px; border-bottom: 1px solid #f1f5f9; color: #334155; font-size: 0.95rem; }
+    tr:hover { background-color: #f8fafc; }
+    
+    .badge-role { padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
+    .bg-admin { background: #fee2e2; color: #dc2626; }
+    .bg-tech { background: #ffedd5; color: #ea580c; }
+    .bg-req { background: #dbeafe; color: #2563eb; }
+
+    .btn-del { 
+        padding: 6px 12px; background: #fee2e2; color: #dc2626; border: none; 
+        border-radius: 8px; cursor: pointer; transition: 0.2s; 
+    }
+    .btn-del:hover { background: #dc2626; color: white; }
+
+    @media (max-width: 1000px) {
+        .admin-wrapper { flex-direction: column; overflow-y: auto; height: auto; }
+        .form-panel, .list-panel { flex: none; height: auto; }
     }
 </style>
 
-<div class="add-user-wrapper">
-    <div class="form-card-wide">
+<div class="admin-wrapper">
+    
+    <div class="form-panel animate__animated animate__fadeInLeft">
+        <h3 style="color:#1e293b; margin-bottom:20px; font-weight:800;"><i class="fa-solid fa-user-plus text-primary"></i> เพิ่มผู้ใช้ใหม่</h3>
         
-        <div class="form-title">
-            <h1><i class="fa-solid fa-user-plus"></i> เพิ่มผู้ใช้งานใหม่</h1>
-            <p>สร้างบัญชีสำหรับเจ้าหน้าที่หรือผู้แจ้งซ่อม</p>
-        </div>
-
-        <form method="POST" action="admin_add_user.php">
-            <div class="form-grid">
-                
-                <div>
-                    <div class="section-head"><i class="fa-solid fa-lock"></i> ข้อมูลเข้าสู่ระบบ (Login)</div>
-                    <div class="input-grp">
-                        <label for="username">Username / Email *</label>
-                        <div class="input-wrapper">
-                            <input type="text" name="username" id="username" class="form-control" required placeholder="ตั้งชื่อผู้ใช้/อีเมล">
-                            <i class="fa-solid fa-at"></i>
-                        </div>
-                    </div>
-                    <div class="input-grp">
-                        <label for="password">Password *</label>
-                        <div class="input-wrapper">
-                            <input type="password" name="password" id="password" class="form-control" required placeholder="ตั้งรหัสผ่านเริ่มต้น (อย่างน้อย 6 ตัวอักษร)">
-                            <i class="fa-solid fa-key"></i>
-                        </div>
-                    </div>
-                    <div class="input-grp">
-                        <label for="role">สิทธิ์การใช้งาน *</label>
-                        <div class="input-wrapper">
-                            <i class="fa-solid fa-user-tag"></i>
-                            <select name="role" id="role" class="form-control" style="cursor:pointer;">
-                                <option value="requester">Requester (ผู้แจ้งซ่อมทั่วไป)</option>
-                                <option value="technician">Technician (ช่างซ่อม)</option>
-                                <option value="admin">Admin (ผู้ดูแลระบบ)</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div>
-                    <div class="section-head"><i class="fa-solid fa-id-card"></i> ข้อมูลส่วนตัว (Personal)</div>
-                    <div class="input-grp">
-                        <label for="full_name">ชื่อ-นามสกุล *</label>
-                        <div class="input-wrapper">
-                            <input type="text" name="full_name" id="full_name" class="form-control" required placeholder="เช่น นายสมชาย ใจดี">
-                            <i class="fa-solid fa-signature"></i>
-                        </div>
-                    </div>
-                    <div class="input-grp">
-                        <label for="group_name">กลุ่ม/ฝ่ายงาน</label>
-                        <div class="input-wrapper">
-                            <input type="text" name="group_name" id="group_name" class="form-control" placeholder="เช่น ฝ่ายบริหารงานบุคคล">
-                            <i class="fa-solid fa-building"></i>
-                        </div>
-                    </div>
-                    <div class="input-grp">
-                        <label for="position">ตำแหน่ง</label>
-                        <div class="input-wrapper">
-                            <input type="text" name="position" id="position" class="form-control" placeholder="เช่น นักวิชาการคอมพิวเตอร์">
-                            <i class="fa-solid fa-briefcase"></i>
-                        </div>
-                    </div>
+        <form method="POST">
+            <div class="input-grp">
+                <label>Username (ชื่อเข้าใช้) *</label>
+                <input type="text" name="username" class="form-control" required placeholder="User01">
+            </div>
+            <div class="input-grp">
+                <label>Password (รหัสผ่าน) *</label>
+                <input type="password" name="password" class="form-control" required placeholder="ขั้นต่ำ 6 ตัวอักษร">
+            </div>
+            <div class="input-grp">
+                <label>Email (อีเมล) *</label>
+                <input type="email" name="email" class="form-control" required placeholder="email@example.com">
+            </div>
+            <div class="input-grp">
+                <label>ชื่อ-นามสกุล *</label>
+                <input type="text" name="full_name" class="form-control" required placeholder="นายสมชาย ใจดี">
+            </div>
+            <div class="input-grp">
+                <label>ตำแหน่ง / สังกัด</label>
+                <div style="display:flex; gap:10px;">
+                    <input type="text" name="position" class="form-control" placeholder="ตำแหน่ง">
+                    <input type="text" name="group_name" class="form-control" placeholder="สังกัด">
                 </div>
             </div>
-            
-            <div style="margin-top: 30px; text-align: center;">
-                <button type="submit" class="btn-submit animate__animated animate__pulse" data-wow-iteration="infinite">
-                    <i class="fa-solid fa-save"></i> บันทึกข้อมูลผู้ใช้
-                </button>
+            <div class="input-grp">
+                <label>สิทธิ์การใช้งาน</label>
+                <select name="role" class="form-control">
+                    <option value="requester">ผู้แจ้งซ่อม (Requester)</option>
+                    <option value="technician">ช่างเทคนิค (Technician)</option>
+                    <option value="admin">ผู้ดูแลระบบ (Admin)</option>
+                </select>
             </div>
+            <button type="submit" class="btn-save"><i class="fa-solid fa-save"></i> บันทึกข้อมูล</button>
         </form>
     </div>
+
+    <div class="list-panel animate__animated animate__fadeInRight">
+        <h3 style="color:#1e293b; margin-bottom:15px; font-weight:800;"><i class="fa-solid fa-users text-success"></i> รายชื่อผู้ใช้ทั้งหมด (<?php echo count($users); ?>)</h3>
+        
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ชื่อ-นามสกุล</th>
+                        <th>Username/Email</th>
+                        <th>สิทธิ์</th>
+                        <th style="text-align:center;">จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach($users as $u): ?>
+                    <tr>
+                        <td>
+                            <div style="font-weight:600;"><?php echo htmlspecialchars($u['full_name']); ?></div>
+                            <div style="font-size:0.85rem; color:#94a3b8;"><?php echo htmlspecialchars($u['position']); ?></div>
+                        </td>
+                        <td>
+                            <div><?php echo htmlspecialchars($u['username']); ?></div>
+                            <div style="font-size:0.85rem; color:#94a3b8;"><?php echo htmlspecialchars($u['email']); ?></div>
+                        </td>
+                        <td>
+                            <?php 
+                                if($u['role']=='admin') echo '<span class="badge-role bg-admin">Admin</span>';
+                                elseif($u['role']=='technician') echo '<span class="badge-role bg-tech">Tech</span>';
+                                else echo '<span class="badge-role bg-req">User</span>';
+                            ?>
+                        </td>
+                        <td style="text-align:center;">
+                            <button onclick="confirmDelete(<?php echo $u['staff_id']; ?>)" class="btn-del">
+                                <i class="fa-solid fa-trash"></i> ลบ
+                            </button>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
 </div>
 
 <script>
-    // SweetAlert สำหรับแจ้งเตือนผลลัพธ์
+    function confirmDelete(id) {
+        Swal.fire({
+            title: 'ยืนยันการลบ?',
+            text: "คุณต้องการลบผู้ใช้นี้ใช่หรือไม่? (การกระทำนี้ย้อนกลับไม่ได้)",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'ใช่, ลบเลย!',
+            cancelButtonText: 'ยกเลิก'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = 'admin_add_user.php?delete_id=' + id;
+            }
+        })
+    }
+
     <?php if ($success): ?>
-        Swal.fire({ icon: 'success', title: 'สำเร็จ!', text: '<?php echo htmlspecialchars($success); ?>', confirmButtonColor: '#10b981', customClass: { popup: 'swal-custom-font' } });
+        Swal.fire({ icon: 'success', title: 'สำเร็จ!', text: '<?php echo $success; ?>', timer: 1500, showConfirmButton: false });
     <?php elseif ($error): ?>
-        Swal.fire({ icon: 'error', title: 'ผิดพลาด!', text: '<?php echo htmlspecialchars($error); ?>', confirmButtonColor: '#ef4444', customClass: { popup: 'swal-custom-font' } });
+        Swal.fire({ icon: 'error', title: 'ผิดพลาด!', text: '<?php echo $error; ?>' });
     <?php endif; ?>
 </script>
 
