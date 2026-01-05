@@ -1,8 +1,8 @@
 <?php
 $host = 'localhost';
-$db   = 'fixrequest';
+$db   = 'fixrequest'; // 🔴 เช็คชื่อ Database ให้ตรง
 $user = 'root';
-$pass = ''; 
+$pass = '';
 $charset = 'utf8mb4';
 
 $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
@@ -13,12 +13,10 @@ $options = [
 ];
 
 try {
-     $pdo = new PDO($dsn, $user, $pass, $options);
+    $pdo = new PDO($dsn, $user, $pass, $options);
 } catch (\PDOException $e) {
-     // Log the real error to a file and show a generic message to users
-     $logFile = __DIR__ . '/logs/db_connect_error.log';
-     error_log(date('[Y-m-d H:i:s] ') . $e->getMessage() . PHP_EOL, 3, $logFile);
-     http_response_code(500);
-     die("<h3>❌ เชื่อมต่อฐานข้อมูลไม่ได้ โปรดติดต่อผู้ดูแลระบบ</h3>");
+    // ถ้า connect ไม่ได้ ให้ throw error ออกไปเลย
+    // เพื่อให้ send_reset_link.php จับได้
+    throw new Exception("Database Connection Failed: " . $e->getMessage());
 }
 ?>
