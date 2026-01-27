@@ -1,5 +1,5 @@
 <?php
-// home.php - Premium Modern Design (Repair System)
+// home.php
 session_start();
 include 'db_connect.php'; 
 
@@ -13,22 +13,37 @@ $page_title = 'หน้าหลัก';
 $full_name = $_SESSION['full_name'];
 $user_role = $_SESSION['user_role'];
 
-// Greeting Logic
+// 2. Greeting Logic (Time Based)
+date_default_timezone_set('Asia/Bangkok');
 $h = date('H');
-$greeting = ($h < 12) ? "อรุณสวัสดิ์ ☀️" : (($h < 16) ? "สวัสดีตอนบ่าย 🌤️" : "สวัสดีตอนเย็น 🌙");
+if ($h < 11) $time_greeting = "ยามเช้า";
+elseif ($h < 13) $time_greeting = "ยามสาย"; // ปรับช่วงเวลาได้ตามชอบ
+elseif ($h < 16) $time_greeting = "ยามบ่าย";
+else $time_greeting = "ยามเย็น";
+
+$welcome_msg = "สวัสดี {$time_greeting} คุณ{$full_name}";
+$welcome_sub = "ยินดีต้อนรับเข้าสู่ระบบบริหารจัดการและซ่อมบำรุงคอมพิวเตอร์ สพป.ชลบุรี เขต 2 ขอให้เป็นวันที่ดีครับ 👋";
+
+// 3. Check Pop-up Flag
+$show_popup = false;
+if (!isset($_SESSION['welcome_shown'])) {
+    $show_popup = true;
+    $_SESSION['welcome_shown'] = true; // Set flag to prevent showing again
+}
 
 include 'includes/header.php'; 
 ?>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
     /* Base Setup */
     body { 
         background-color: #f8fafc; 
         font-family: 'Sarabun', sans-serif; 
-        overflow-x: hidden; /* กัน Scroll แนวนอน */
+        overflow-x: hidden;
     }
 
     /* Main Wrapper */
@@ -42,62 +57,24 @@ include 'includes/header.php';
         background: radial-gradient(circle at top center, rgba(59, 130, 246, 0.08) 0%, transparent 60%);
     }
 
-    /* 1. Welcome Banner (Premium Gradient) */
-    .welcome-card {
-        width: 100%;
-        max-width: 1100px;
-        background: linear-gradient(120deg, #2563eb, #4f46e5, #7c3aed);
-        background-size: 200% 200%;
-        animation: gradientMove 6s ease infinite;
-        border-radius: 20px;
-        padding: 35px 50px;
-        color: white;
-        box-shadow: 0 20px 40px -10px rgba(67, 56, 202, 0.4);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    @keyframes gradientMove { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+    /* (ลบ .welcome-card เดิมออก เพราะจะใช้ Popup แทน หรือจะเก็บไว้เป็น Banner นิ่งๆ ก็ได้) */
+    /* ถ้าต้องการเก็บ Banner นิ่งๆ ไว้ด้านบน Slider ก็ใช้ Style เดิมได้เลยครับ */
+    /* แต่ในที่นี้ผมจะซ่อน .welcome-card เพื่อไม่ให้ซ้ำซ้อนกับ Popup ตามโจทย์ */
 
-    /* Floating Shapes Decoration */
-    .shape { position: absolute; background: rgba(255,255,255,0.1); border-radius: 50%; backdrop-filter: blur(5px); }
-    .s1 { width: 150px; height: 150px; top: -50px; right: -20px; }
-    .s2 { width: 80px; height: 80px; bottom: 20px; left: 40px; }
-
-    .welcome-content { z-index: 2; }
-    .welcome-content h1 { margin: 0; font-size: 2rem; font-weight: 800; letter-spacing: -0.5px; }
-    .welcome-content p { margin: 5px 0 0; font-size: 1.1rem; opacity: 0.9; font-weight: 500; }
-
-    .role-badge {
-        background: rgba(255, 255, 255, 0.25);
-        padding: 8px 20px;
-        border-radius: 50px;
-        font-weight: 600;
-        font-size: 0.9rem;
-        border: 1px solid rgba(255,255,255,0.4);
-        backdrop-filter: blur(10px);
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        z-index: 2;
-        display: flex; align-items: center; gap: 8px;
-    }
-
-    /* 2. Image Slider (Clean Look) */
+    /* 2. Image Slider */
     .slider-section {
         width: 100%; max-width: 1100px;
-        height: 380px;
-        border-radius: 20px;
+        height: 420px; /* เพิ่มความสูงนิดหน่อยให้เด่นขึ้น */
+        border-radius: 24px;
         overflow: hidden;
-        box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.08);
         position: relative;
+        margin-top: 20px; /* ขยับลงมาหน่อยเพราะไม่มี welcome-card แล้ว */
     }
     .swiper { width: 100%; height: 100%; }
     .swiper-slide img { width: 100%; height: 100%; object-fit: cover; transition: transform 6s ease; }
     .swiper-slide-active img { transform: scale(1.05); }
 
-    /* Custom Nav Buttons */
     .swiper-btn {
         width: 45px; height: 45px; background: rgba(255,255,255,0.9);
         border-radius: 50%; color: #333; transition: 0.3s;
@@ -106,54 +83,54 @@ include 'includes/header.php';
     .swiper-btn:after { font-size: 1.2rem; font-weight: bold; }
     .swiper-btn:hover { background: var(--primary); color: white; transform: scale(1.1); }
 
-    /* 3. Quick Menu (Grid Layout) */
+    /* 3. Quick Menu */
     .menu-section { width: 100%; max-width: 1100px; }
     .section-head { 
-        margin-bottom: 20px; font-weight: 700; color: #334155; font-size: 1.2rem;
-        display: flex; align-items: center; gap: 10px;
+        margin-bottom: 25px; font-weight: 700; color: #334155; font-size: 1.3rem;
+        display: flex; align-items: center; gap: 12px;
     }
     .section-head i { color: var(--primary); }
 
     .menu-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
         gap: 25px;
     }
 
     .menu-item {
         background: white;
-        border-radius: 16px;
-        padding: 25px;
+        border-radius: 20px;
+        padding: 30px;
         display: flex;
         align-items: center;
         gap: 20px;
         text-decoration: none;
         color: #1e293b;
-        transition: all 0.3s ease;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         border: 1px solid #f1f5f9;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
         position: relative;
         overflow: hidden;
     }
 
     .menu-item:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        transform: translateY(-8px);
+        box-shadow: 0 20px 30px -5px rgba(0, 0, 0, 0.08);
         border-color: #cbd5e1;
     }
 
     .icon-box {
-        width: 60px; height: 60px;
-        border-radius: 14px;
+        width: 65px; height: 65px;
+        border-radius: 18px;
         display: flex; align-items: center; justify-content: center;
         font-size: 1.8rem;
-        transition: 0.3s;
+        transition: 0.4s;
     }
     
-    .menu-item:hover .icon-box { transform: scale(1.1) rotate(5deg); }
+    .menu-item:hover .icon-box { transform: scale(1.1) rotate(10deg); }
 
-    .text-box h3 { margin: 0; font-size: 1.1rem; font-weight: 700; color: #0f172a; }
-    .text-box p { margin: 4px 0 0; font-size: 0.85rem; color: #64748b; }
+    .text-box h3 { margin: 0; font-size: 1.15rem; font-weight: 700; color: #0f172a; }
+    .text-box p { margin: 5px 0 0; font-size: 0.9rem; color: #64748b; }
 
     /* Colors */
     .theme-blue { background: #eff6ff; color: #2563eb; }
@@ -162,32 +139,20 @@ include 'includes/header.php';
     .theme-purple { background: #faf5ff; color: #9333ea; }
     .theme-red { background: #fef2f2; color: #dc2626; }
 
+    /* Custom SweetAlert Font */
+    .swal2-popup { font-family: 'Sarabun', sans-serif !important; }
+    .swal2-title { font-size: 1.6rem !important; color: #1e293b !important; }
+    .swal2-html-container { font-size: 1.1rem !important; color: #475569 !important; line-height: 1.6 !important; }
+
     /* Responsive */
-    @media (max-width: 768px) {
-        .welcome-card { flex-direction: column; text-align: center; gap: 15px; padding: 30px; }
-        .slider-section { height: 250px; }
-        .menu-item { padding: 20px; }
+    @media (max-width: 992px) {
+        .slider-section { height: 280px; }
     }
 </style>
 
 <div class="home-wrapper">
     
-    <div class="welcome-card">
-        <div class="shape s1"></div>
-        <div class="shape s2"></div>
-        
-        <div class="welcome-content">
-            <p><?php echo $greeting; ?></p>
-            <h1>คุณ<?php echo htmlspecialchars($full_name); ?> 👋</h1>
-        </div>
-        
-        <div class="role-badge">
-            <i class="fa-solid fa-id-badge"></i>
-            <span>สถานะ: <?php echo ucfirst($user_role); ?></span>
-        </div>
-    </div>
-
-    <div class="slider-section">
+    <div class="slider-section animate__animated animate__fadeInUp">
         <div class="swiper mySwiper">
             <div class="swiper-wrapper">
                 <div class="swiper-slide"><img src="https://images.unsplash.com/photo-1581092921461-eab62e97a780?q=80&w=1200" alt="Repair"></div>
@@ -200,7 +165,7 @@ include 'includes/header.php';
         </div>
     </div>
 
-    <div class="menu-section">
+    <div class="menu-section animate__animated animate__fadeInUp animate__delay-1s">
         <div class="section-head"><i class="fa-solid fa-layer-group"></i> เมนูใช้งานด่วน</div>
         
         <div class="menu-grid">
@@ -256,6 +221,7 @@ include 'includes/header.php';
 </div>
 
 <script>
+    // 1. Swiper Init
     var swiper = new Swiper(".mySwiper", {
         spaceBetween: 0,
         effect: "fade",
@@ -264,6 +230,31 @@ include 'includes/header.php';
         navigation: { nextEl: ".swiper-button-next", prevEl: ".swiper-button-prev" },
         loop: true,
     });
+
+    // 2. Greeting Popup Logic
+    <?php if ($show_popup): ?>
+    document.addEventListener('DOMContentLoaded', function() {
+        Swal.fire({
+            title: '<?php echo $welcome_msg; ?>',
+            html: '<?php echo $welcome_sub; ?>',
+            icon: 'success', // หรือใช้ 'info' ตามชอบ
+            imageUrl: 'images/welcome_icon.png', // ถ้ามีรูปไอคอนน่ารักๆ ใส่ตรงนี้ได้ (optional)
+            imageWidth: 100,
+            imageHeight: 100,
+            imageAlt: 'Welcome Image',
+            confirmButtonText: 'เข้าสู่ระบบงาน',
+            confirmButtonColor: '#3b82f6',
+            timer: 5000, // ปิดเองใน 5 วิ (optional)
+            timerProgressBar: true,
+            backdrop: `
+                rgba(0,0,123,0.4)
+                url("images/nyan-cat.gif") 
+                left top
+                no-repeat
+            ` // อันนี้เป็นลูกเล่น Backdrop (ลบออกได้ถ้าชอบแบบเรียบๆ)
+        });
+    });
+    <?php endif; ?>
 </script>
 
 <?php // include 'includes/footer.php'; ?>

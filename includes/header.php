@@ -10,19 +10,19 @@ $lang_code = $_COOKIE['app_lang'] ?? 'th';
 // Dictionary ภาษา
 $lang = [
     'th' => [ 
-        'title' => 'ระบบแจ้งซ่อม DLICT', 
+        'title' => 'ระบบบริหารจัดการและซ่อมบำรุงคอมพิวเตอร์ สพป.ชลบุรี เขต 2', 
         'home' => 'หน้าหลัก', 
         'dashboard' => 'รายการแจ้งซ่อม', 
         'report' => 'แดชบอร์ด', 
         'add_user' => 'จัดการผู้ใช้', 
-        'manage_cat' => 'จัดการประเภทงาน', // เพิ่มคำแปล
+        'manage_cat' => 'จัดการประเภทงาน',
         'new_request' => 'แจ้งซ่อม', 
         'tracking' => 'ติดตามงาน', 
         'login' => 'เข้าสู่ระบบ', 
         'logout' => 'ออกจากระบบ' 
     ],
     'en' => [ 
-        'title' => 'DLICT Repair System', 
+        'title' => 'IT Maintenance and Service Management System (Chonburi Primary Educational Service Area Office 2)', 
         'home' => 'Home', 
         'dashboard' => 'Dashboard', 
         'report' => 'Report', 
@@ -75,123 +75,201 @@ $time_str = date('H:i') . ' น.';
     <style>
         .swal-custom-font { font-family: 'Sarabun', sans-serif !important; }
         
-        /* Header Layout */
-        .header-inner { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 10px 20px; }
+        /* --- Header Layout (Grid System for Balance) --- */
+        .site-header {
+            background-color: #fff;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            height: 70px;
+        }
+
+        .header-inner { 
+            height: 100%;
+            display: grid;
+            /* แบ่งเป็น 3 ส่วน: โลโก้(auto) | เมนู(ขยายเต็มที่) | ผู้ใช้(auto) */
+            /* หรือถ้าอยากให้เมนูกลางเป๊ะๆ ใช้ 1fr auto 1fr แต่จะกินที่โลโก้ */
+            grid-template-columns: auto 1fr auto; 
+            align-items: center;
+            gap: 20px;
+            padding: 0 25px;
+            max-width: 1600px; /* จำกัดความกว้างไม่ให้ห่างกันเกินไปบนจอใหญ่ */
+            margin: 0 auto;
+        }
         
-        /* Brand Logo */
+        /* --- 1. Brand / Logo --- */
         .brand { 
-            font-size: 1.6rem; font-weight: 900; text-decoration: none; 
-            display: flex; align-items: center; gap: 10px;
-            background: linear-gradient(45deg, var(--primary), #0ea5e9, #6366f1);
+            text-decoration: none; 
+            display: flex; align-items: center; gap: 12px;
+            min-width: max-content; /* ไม่ให้โลโก้หด */
+        }
+        
+        .brand i { 
+            font-size: 1.8rem; 
+            background: linear-gradient(45deg, var(--primary), #0ea5e9);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            transition: transform 0.3s;
         }
-        .brand i { -webkit-text-fill-color: var(--primary); }
-        .brand:hover { transform: scale(1.05) rotate(-2deg); }
 
-        /* Navigation Menu */
-        .main-nav { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-        .nav-item { 
-            text-decoration: none; color: var(--text-muted); font-weight: 600; 
-            padding: 8px 16px; border-radius: 50px; 
-            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
-            font-size: 0.95rem; display: inline-flex; align-items: center; gap: 8px;
-            border: 1px solid transparent;
+        .brand-text { display: flex; flex-direction: column; justify-content: center; }
+        .brand-main {
+            font-size: 1.2rem; font-weight: 800;
+            color: #1e293b;
+            line-height: 1;
         }
-        .nav-item:hover { 
-            background-color: var(--info-bg); color: var(--primary); 
-            transform: translateY(-3px); box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-color: var(--info);
+        .brand-sub { 
+            font-size: 0.75rem; color: #64748b; font-weight: 500; 
+            margin-top: 2px;
         }
-        .nav-item:active { transform: scale(0.95); }
 
-        /* User Info Panel */
-        .user-panel { display: flex; align-items: center; gap: 15px; flex-shrink: 0; }
-        .datetime-badge { display: flex; flex-direction: column; align-items: flex-end; font-size: 0.8rem; color: var(--text-muted); line-height: 1.3; border-right: 1px solid var(--border); padding-right: 15px; }
-        .datetime-badge .time { color: var(--primary); font-weight: 700; font-size: 0.9rem; }
+        /* --- 2. Navigation Menu (Centered) --- */
+        .main-nav { 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; /* จัดกึ่งกลางพื้นที่ */
+            gap: 4px; 
+            height: 100%;
+        }
+
+        .nav-item {
+            display: flex; align-items: center; gap: 6px;
+            padding: 8px 12px;
+            color: #475569;
+            text-decoration: none;
+            font-size: 0.85rem; /* ลดขนาดลงนิดนึงให้ดูคลีน */
+            font-weight: 600;
+            border-radius: 8px;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .nav-item:hover {
+            background-color: var(--info-bg);
+            color: var(--primary);
+        }
+        
+        .nav-item i { font-size: 0.9rem; }
+
+        /* --- 3. User Panel --- */
+        .user-panel { 
+            display: flex; align-items: center; gap: 12px; 
+            justify-content: flex-end;
+            min-width: max-content;
+        }
+        
+        .datetime-badge { 
+            display: flex; flex-direction: column; align-items: flex-end; 
+            font-size: 0.75rem; color: #64748b; 
+            border-right: 1px solid #e2e8f0; padding-right: 15px; 
+        }
+        .datetime-badge .time { color: var(--primary); font-weight: 700; }
         
         .user-info-box {
-            display: flex; align-items: center; gap: 12px;
-            background: rgba(0,0,0,0.02); padding: 6px 18px; border-radius: 50px; 
-            border: 1px solid var(--border); transition: all 0.3s ease; cursor: pointer;
+            display: flex; align-items: center; gap: 10px;
+            background: #f8fafc; padding: 4px 6px 4px 12px; 
+            border-radius: 50px; 
+            border: 1px solid #e2e8f0; transition: all 0.2s; cursor: pointer;
         }
         .user-info-box:hover {
-            background: #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.08); border-color: var(--primary);
+            background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-color: var(--primary);
         }
-        .user-avatar i { font-size: 34px; color: var(--primary); display: block; transition: 0.4s; }
-        .user-info-box:hover .user-avatar i { transform: rotate(360deg); }
+        .user-avatar i { font-size: 28px; color: var(--primary); }
 
-        .user-text { display: flex; flex-direction: column; line-height: 1.1; }
-        .user-text .name { font-weight: 700; font-size: 0.95rem; color: var(--text-main); }
-        .user-text .role { font-size: 0.75rem; color: var(--text-muted); }
+        .user-text { display: flex; flex-direction: column; line-height: 1.1; text-align: left; }
+        .user-text .name { font-weight: 700; font-size: 0.85rem; color: #334155; }
+        .user-text .role { font-size: 0.7rem; color: #94a3b8; }
 
-        /* Logout Button */
         .btn-logout-icon { 
-            color: #ef4444; font-size: 1.1rem; padding: 0; 
-            width: 36px; height: 36px; border-radius: 50%; 
-            background: var(--danger-bg); 
-            display: flex; align-items: center; justify-content: center; 
-            text-decoration: none; transition: all 0.4s ease; margin-left: 10px;
+            color: #ef4444; width: 28px; height: 28px; border-radius: 50%; 
+            background: #fee2e2; display: flex; align-items: center; justify-content: center; 
+            text-decoration: none; transition: all 0.2s; margin-left: 8px; font-size: 0.8rem;
         }
-        .btn-logout-icon:hover { 
-            background: #ef4444; color: white; 
-            transform: rotate(180deg) scale(1.1); 
-            box-shadow: 0 0 10px rgba(239, 68, 68, 0.4); 
+        .btn-logout-icon:hover { background: #ef4444; color: white; transform: scale(1.1); }
+
+        /* --- Responsive Logic (แก้ปัญหาซ้อนกัน) --- */
+        
+        /* Step 1: เมื่อจอเริ่มเล็กลง (Laptop ทั่วไป) -> ซ่อนคำอธิบายไทย */
+        @media (max-width: 1450px) {
+            .brand-sub { display: none; }
         }
 
-        /* Responsive */
-        @media (max-width: 992px) {
-            .header-inner { flex-direction: column; gap: 15px; padding: 15px; }
-            .main-nav { justify-content: center; width: 100%; gap: 10px; }
-            .user-panel { width: 100%; justify-content: space-between; border-top: 1px dashed var(--border); padding-top: 10px; }
-            .datetime-badge { align-items: flex-start; border-right: none; padding-right: 0; }
+        /* Step 2: เมื่อจอเล็กลงอีก (Tablet Pro) -> ซ่อนวันที่ */
+        @media (max-width: 1100px) {
+            .datetime-badge { display: none; }
+            .header-inner { padding: 0 15px; gap: 10px; }
+        }
+
+        /* Step 3: เมื่อจอเล็กมาก (Tablet/Mobile) -> เปลี่ยน Layout */
+        @media (max-width: 900px) {
+            .site-header { height: auto; padding: 10px 0; }
+            .header-inner { display: flex; flex-wrap: wrap; gap: 10px; }
+            
+            .brand { width: 100%; justify-content: center; margin-bottom: 5px; }
+            
+            .main-nav { 
+                width: 100%; 
+                order: 3; 
+                justify-content: flex-start;
+                overflow-x: auto; 
+                padding-bottom: 5px; 
+                border-top: 1px dashed #e2e8f0; 
+                padding-top: 10px;
+            }
+            
+            .user-panel { width: 100%; justify-content: center; }
+            .user-info-box { width: 100%; justify-content: space-between; }
         }
     </style>
 </head>
 <body data-theme="<?php echo htmlspecialchars($theme); ?>">
     
     <header class="site-header">
-        <div class="container header-inner">
+        <div class="header-inner">
             
             <a class="brand" href="<?php echo $logged_in ? 'home.php' : 'login.php'; ?>">
-                <i class="fa-solid fa-screwdriver-wrench fa-bounce" style="--fa-animation-duration: 2s;"></i> 
-                <span>DLICT Repair</span>
+                <i class="fa-solid fa-screwdriver-wrench"></i> 
+                <div class="brand-text">
+                    <span class="brand-main">IT Maintenance System</span>
+                    <span class="brand-sub">ระบบบริหารจัดการและซ่อมบำรุงคอมพิวเตอร์ สพป.ชลบุรี เขต 2</span>
+                </div>
             </a>
             
-            <nav class="main-nav desktop-nav">
-                <?php if ($logged_in): ?>
-                    <a href="home.php" class="nav-item">
-                        <i class="fa-solid fa-house"></i> <?php echo $L['home']; ?>
+            <?php if ($logged_in): ?>
+            <nav class="main-nav">
+                <a href="home.php" class="nav-item">
+                    <i class="fa-solid fa-house"></i> <?php echo $L['home']; ?>
+                </a>
+                
+                <?php if ($user_role == 'technician' || $user_role == 'admin'): ?>
+                    <a href="dashboard_tech.php" class="nav-item">
+                        <i class="fa-solid fa-gauge"></i> <?php echo $L['dashboard']; ?>
                     </a>
-                    
-                    <?php if ($user_role == 'technician' || $user_role == 'admin'): ?>
-                        <a href="dashboard_tech.php" class="nav-item">
-                            <i class="fa-solid fa-gauge"></i> <?php echo $L['dashboard']; ?>
-                        </a>
-                    <?php endif; ?>
+                <?php endif; ?>
 
-                    <?php if ($user_role == 'admin'): ?>
-                        <a href="admin_report.php" class="nav-item">
-                            <i class="fa-solid fa-chart-pie"></i> <?php echo $L['report']; ?>
-                        </a>
-                        <a href="admin_add_user.php" class="nav-item">
-                            <i class="fa-solid fa-user-plus"></i> <?php echo $L['add_user']; ?>
-                        </a>
-                        <a href="admin_manage_categories.php" class="nav-item">
-                            <i class="fa-solid fa-list"></i> <?php echo $L['manage_cat']; ?>
-                        </a>
-                    <?php endif; ?>
-                    
-                    <a href="new_request.php" class="nav-item">
-                        <i class="fa-solid fa-bell"></i> <?php echo $L['new_request']; ?>
+                <?php if ($user_role == 'admin'): ?>
+                    <a href="admin_report.php" class="nav-item">
+                        <i class="fa-solid fa-chart-pie"></i> <?php echo $L['report']; ?>
                     </a>
-                    
-                    <?php if ($user_role == 'requester'): ?>
-                        <a href="tracking.php" class="nav-item">
-                            <i class="fa-solid fa-list-check"></i> <?php echo $L['tracking']; ?>
-                        </a>
-                    <?php endif; ?>
+                    <a href="admin_add_user.php" class="nav-item">
+                        <i class="fa-solid fa-user-plus"></i> <?php echo $L['add_user']; ?>
+                    </a>
+                    <a href="admin_manage_categories.php" class="nav-item">
+                        <i class="fa-solid fa-list"></i> <?php echo $L['manage_cat']; ?>
+                    </a>
+                <?php endif; ?>
+                
+                <a href="new_request.php" class="nav-item">
+                    <i class="fa-solid fa-bell"></i> <?php echo $L['new_request']; ?>
+                </a>
+                
+                <?php if ($user_role == 'requester'): ?>
+                    <a href="tracking.php" class="nav-item">
+                        <i class="fa-solid fa-list-check"></i> <?php echo $L['tracking']; ?>
+                    </a>
                 <?php endif; ?>
             </nav>
+            <?php else: ?>
+            <div></div> <?php endif; ?>
 
             <div class="user-panel">
                 <div class="datetime-badge">
@@ -201,12 +279,14 @@ $time_str = date('H:i') . ' น.';
 
                 <?php if ($logged_in): ?>
                     <div class="user-info-box" onclick="showProfile()" title="คลิกดูข้อมูล">
-                        <div class="user-avatar">
-                            <i class="fa-solid fa-circle-user"></i>
-                        </div>
-                        <div class="user-text">
-                            <span class="name"><?php echo htmlspecialchars($full_name); ?></span>
-                            <small class="role"><?php echo ucfirst($user_role); ?></small>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <div class="user-avatar">
+                                <i class="fa-solid fa-circle-user"></i>
+                            </div>
+                            <div class="user-text">
+                                <span class="name"><?php echo htmlspecialchars($full_name); ?></span>
+                                <small class="role"><?php echo ucfirst($user_role); ?></small>
+                            </div>
                         </div>
                         <a class="btn-logout-icon animate__animated" href="#" onclick="confirmLogout(event)" 
                            title="<?php echo $L['logout']; ?>" 

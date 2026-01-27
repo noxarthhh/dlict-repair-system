@@ -8,7 +8,7 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['user_role'] !== 'requester') {
     exit();
 }
 
-$page_title = 'ติดตามงานซ่อม';
+$page_title = 'ติดตาสถานะ';
 $staff_id = $_SESSION['staff_id'];
 
 // Data Query

@@ -38,8 +38,8 @@ initLoginSystem($pdo);
 function checkBruteForce($pdo, $username) {
     $max_attempts = 5;
     $lockout_time = 900; 
-    $stmt = $pdo->prepare("SELECT COUNT(*) as attempts FROM login_attempts WHERE username = ? AND attempt_time > DATE_SUB(NOW(), INTERVAL ? SECOND) AND success = 0");
-    $stmt->execute([$username, $lockout_time]);
+    $stmt = $pdo->prepare("SELECT COUNT(*) as attempts FROM login_attempts WHERE username = ? AND ip_address = ? AND attempt_time > DATE_SUB(NOW(), INTERVAL ? SECOND) AND success = 0");
+    $stmt->execute([$username, $_SERVER['REMOTE_ADDR'], $lockout_time]);
     $result = $stmt->fetch(PDO::FETCH_ASSOC);
     return ($result['attempts'] >= $max_attempts);
 }
@@ -90,7 +90,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 }
 
-$page_title = 'เข้าสู่ระบบ - ระบบแจ้งซ่อม DLICT';
+$page_title = 'เข้าสู่ระบบ - ระบบบริหารจัดการและซ่อมบำรุงคอมพิวเตอร์สำนักงานเขตพื้นที่การศึกษาประถมศึกษาชลบุรี เขต 2';
 include 'includes/header.php';
 ?>
 
@@ -102,9 +102,8 @@ include 'includes/header.php';
         background: linear-gradient(-45deg, #eef2ff, #f0fdf4, #fff7ed, #fdf4ff);
         background-size: 400% 400%;
         animation: gradientBG 15s ease infinite;
-        overflow: hidden; /* ป้องกัน Scrollbar */
-        height: 100vh;
-        margin: 0;
+        overflow-y: auto;
+        min-height: 100vh;
     }
     @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
 
